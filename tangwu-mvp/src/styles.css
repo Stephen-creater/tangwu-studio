@@ -313,12 +313,15 @@ button:disabled {
 .tw-side-panel {
   display: grid;
   gap: 12px;
+  align-content: start;
+  grid-auto-rows: max-content;
 }
 
 .tw-center-panel {
   display: grid;
   gap: 12px;
   padding: 16px;
+  align-content: start;
 }
 
 .tw-setup-left,
@@ -335,6 +338,34 @@ button:disabled {
 
 .tw-play-layout .tw-center-panel {
   grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.tw-play-layout .tw-side-panel .tw-panel-headline h2 {
+  font-size: 24px;
+}
+
+.tw-play-layout .tw-side-panel .tw-seat-stack {
+  gap: 10px;
+}
+
+.tw-play-layout .tw-side-panel .tw-seat-card {
+  padding: 12px;
+  grid-template-columns: 70px minmax(0, 1fr);
+}
+
+.tw-play-layout .tw-side-panel .tw-seat-avatar {
+  width: 70px;
+  height: 70px;
+}
+
+.tw-play-layout .tw-side-panel .tw-seat-line strong {
+  font-size: 17px;
+}
+
+.tw-play-layout .tw-side-panel .tw-seat-copy p {
+  font-size: 14px;
+  line-height: 1.45;
+  white-space: nowrap;
 }
 
 .tw-panel-headline {
@@ -651,40 +682,41 @@ button:disabled {
 }
 
 .tw-setup-hero {
-  min-height: 320px;
+  min-height: 220px;
 }
 
 .tw-setup-hero-copy {
   position: absolute;
-  top: 20px;
-  left: 20px;
+  top: 16px;
+  left: 16px;
   z-index: 1;
   display: grid;
-  gap: 6px;
-  max-width: 340px;
+  gap: 4px;
+  max-width: 300px;
 }
 
 .tw-setup-hero-copy h2 {
   margin: 0;
   color: rgba(255, 243, 225, 0.96);
-  font-size: 52px;
+  font-size: 40px;
   line-height: 1;
 }
 
 .tw-setup-hero-copy p {
   margin: 0;
   color: rgba(255, 241, 221, 0.78);
-  line-height: 1.7;
+  line-height: 1.5;
+  font-size: 15px;
 }
 
 .tw-setup-board {
   display: grid;
-  gap: 18px;
+  gap: 12px;
 }
 
 .tw-setup-board-row {
   display: grid;
-  gap: 14px;
+  gap: 10px;
 }
 
 .tw-setup-board-row + .tw-setup-board-row {
@@ -705,7 +737,7 @@ button:disabled {
 }
 
 .tw-segment-grid-compact .tw-segment-button {
-  min-height: 56px;
+  min-height: 48px;
 }
 
 .tw-theme-grid-compact {
@@ -713,27 +745,22 @@ button:disabled {
 }
 
 .tw-theme-grid-compact .tw-theme-card {
-  gap: 10px;
-  padding: 10px;
+  gap: 6px;
+  padding: 8px;
   min-height: 0;
 }
 
 .tw-theme-grid-compact .tw-theme-thumb {
-  min-height: 126px;
+  min-height: 88px;
 }
 
 .tw-theme-grid-compact .tw-theme-copy {
   display: grid;
-  gap: 4px;
+  gap: 0;
 }
 
 .tw-theme-grid-compact .tw-theme-copy strong {
-  font-size: 18px;
-}
-
-.tw-theme-grid-compact .tw-theme-copy em {
-  margin-top: 0;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .tw-difficulty-grid-compact {
@@ -741,25 +768,19 @@ button:disabled {
 }
 
 .tw-difficulty-grid-compact .tw-difficulty-card {
-  min-height: 124px;
-  padding: 14px 14px 12px;
+  min-height: 54px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tw-difficulty-grid-compact .tw-difficulty-card strong {
-  font-size: 18px;
+  font-size: 17px;
 }
 
 .tw-setup-launch {
-  display: grid;
-  gap: 14px;
-}
-
-.tw-summary-strip-compact {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.tw-summary-strip-compact strong {
-  font-size: 16px;
+  padding-top: 2px;
 }
 
 .tw-rule-grid {
@@ -837,6 +858,35 @@ button:disabled {
   padding-left: 20px;
   display: grid;
   gap: 8px;
+}
+
+.tw-discovered-clues {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.tw-discovered-card {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(141, 103, 58, 0.14);
+  background: rgba(255, 251, 244, 0.7);
+}
+
+.tw-discovered-card img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(141, 103, 58, 0.18);
+}
+
+.tw-discovered-card strong {
+  line-height: 1.58;
 }
 
 .tw-list-card li {
@@ -1072,7 +1122,7 @@ button:disabled {
 }
 
 .tw-seat-card.has-emblem {
-  grid-template-columns: 78px minmax(0, 1fr) 62px;
+  grid-template-columns: 78px minmax(0, 1fr) 50px;
 }
 
 .tw-seat-card.is-active {
@@ -1095,7 +1145,8 @@ button:disabled {
 
 .tw-seat-line {
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
 
 .tw-seat-number {
@@ -1110,22 +1161,26 @@ button:disabled {
 }
 
 .tw-seat-line strong {
-  font-size: 18px;
+  font-size: 17px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .tw-seat-type {
   display: inline-flex;
   align-items: center;
-  min-height: 26px;
-  margin-top: 8px;
-  padding: 0 10px;
+  min-height: 24px;
+  margin-top: 0;
+  padding: 0 9px;
   border-radius: 999px;
   background: rgba(141, 103, 58, 0.08);
   color: var(--accent-strong);
-  font-size: 12px;
+  font-size: 11px;
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .tw-seat-type.is-ai {
@@ -1134,13 +1189,13 @@ button:disabled {
 }
 
 .tw-seat-copy p {
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .tw-seat-emblem {
-  width: 54px;
+  width: 42px;
   justify-self: end;
-  opacity: 0.42;
+  opacity: 0.34;
 }
 
 .tw-panel-headline p,
@@ -1574,6 +1629,19 @@ button:disabled {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.tw-clue-card {
+  overflow: hidden;
+}
+
+.tw-clue-card img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 12px;
+  display: block;
+  border: 1px solid rgba(141, 103, 58, 0.16);
+}
+
 .tw-clue-card strong {
   margin-top: 12px;
   font-size: 18px;
@@ -1583,6 +1651,25 @@ button:disabled {
 .tw-clue-card.is-found {
   background: rgba(141, 103, 58, 0.1);
   border-color: rgba(141, 103, 58, 0.26);
+}
+
+.tw-review-stamp-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 220px;
+  margin: 18px auto 6px;
+}
+
+.tw-review-stamp {
+  width: 220px;
+  opacity: 0.94;
+}
+
+.tw-review-stamp-value {
+  position: absolute;
+  font-size: 40px;
+  color: var(--text-main);
 }
 
 .tw-modal-backdrop {
@@ -1714,6 +1801,29 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .tw-discovered-card {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .tw-discovered-card img {
+    width: 64px;
+    height: 64px;
+  }
+
+  .tw-composer-main {
+    grid-template-columns: 1fr;
+  }
+
+  .tw-composer-submit {
+    min-height: 56px;
+  }
+
+  .tw-composer-meta,
+  .tw-composer-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .tw-inline-stats-setup {
     grid-template-columns: 1fr;
   }
@@ -1769,8 +1879,24 @@ button:disabled {
     min-height: 260px;
   }
 
+  .tw-dialog-hero {
+    min-height: 220px;
+  }
+
   .tw-setup-hero-copy h2 {
     font-size: 38px;
+  }
+
+  .tw-dialog-hero-copy h1 {
+    font-size: 34px;
+  }
+
+  .tw-dialog-hero-copy p {
+    font-size: 15px;
+  }
+
+  .tw-dialog-hero-stamp {
+    font-size: 34px;
   }
 
   .tw-keeper-title {
@@ -1816,5 +1942,14 @@ button:disabled {
   .tw-modal-panel {
     padding: 18px;
     border-radius: 22px;
+  }
+
+  .tw-review-stamp-wrap,
+  .tw-review-stamp {
+    width: 180px;
+  }
+
+  .tw-review-stamp-value {
+    font-size: 32px;
   }
 }

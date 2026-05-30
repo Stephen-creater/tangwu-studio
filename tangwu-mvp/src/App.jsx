@@ -5,8 +5,7 @@ import {
   getDifficultyConfig,
   getScenarioByTheme,
   getThemeById,
-  seatProfiles,
-  themes
+  seatProfiles
 } from "./gameData";
 import { generateAiQuestion, judgeGuess } from "./lib/minimax";
 
@@ -81,6 +80,11 @@ function findAnswer(question, scenario) {
   }
 
   return { answer: "无关" };
+}
+
+function getClueCardById(scenario, clueId) {
+  if (!clueId) return null;
+  return scenario.clueCards.find((card) => card.id === clueId) || null;
 }
 
 function evaluateGuess(guess, scenario) {
@@ -214,10 +218,10 @@ function SeatInfoCard({ player, note, active = false, showEmblem = false }) {
         <div className="tw-seat-line">
           <span className="tw-seat-number">{player.seat}</span>
           <strong>{player.name}</strong>
+          <span className={`tw-seat-type ${player.type === "ai" ? "is-ai" : ""}`}>
+            {player.type === "human" ? "人类" : "AI"}
+          </span>
         </div>
-        <span className={`tw-seat-type ${player.type === "ai" ? "is-ai" : ""}`}>
-          {player.type === "human" ? "人类席位" : "AI 补位"}
-        </span>
         <p>{note}</p>
       </div>
       {showEmblem ? (
@@ -236,7 +240,6 @@ function SetupScreen({
   selectedTheme,
   selectedDifficulty,
   onHumanCountChange,
-  onThemeChange,
   onDifficultyChange,
   onOpenStory,
   onOpenRules,
@@ -282,21 +285,7 @@ function SetupScreen({
               </div>
               <span className="tw-inline-chip">{game.scenario.chapter}</span>
             </div>
-            <p>{game.scenario.setupCopy}</p>
-            <div className="tw-dossier-sections">
-              <div className="tw-dossier-block">
-                <span>汤面气质</span>
-                <strong>{selectedTheme.lead}</strong>
-              </div>
-              <div className="tw-dossier-block">
-                <span>起手建议</span>
-                <ul>
-                  {selectedTheme.starterQuestions.map((question) => (
-                    <li key={question}>{question}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            <p>{game.scenario.summary}</p>
           </div>
         </aside>
 
@@ -341,36 +330,10 @@ function SetupScreen({
               </div>
             </div>
 
-            <div className="tw-setup-board-row">
-              <div className="tw-block-head">
-                <h3>主题选择</h3>
-                <span>每个主题都会切换题面、视觉氛围与起手建议。</span>
-              </div>
-              <div className="tw-theme-grid tw-theme-grid-compact">
-                {themes.map((theme) => (
-                  <button
-                    key={theme.id}
-                    className={`tw-theme-card ${game.themeId === theme.id ? "is-active" : ""}`}
-                    onClick={() => onThemeChange(theme.id)}
-                  >
-                    <div className="tw-theme-thumb" data-tone={theme.tone}>
-                      <img src={theme.image} alt={theme.title} />
-                      <span>{theme.badge}</span>
-                    </div>
-                    <div className="tw-theme-copy">
-                      <strong>{theme.title}</strong>
-                      <em>{theme.subtitle}</em>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="tw-setup-board-footer">
+            <div className="tw-setup-board-footer tw-setup-board-footer-inline">
               <div className="tw-setup-board-row tw-setup-board-row-compact">
                 <div className="tw-block-head">
                   <h3>难度选择</h3>
-                  <span>{selectedDifficulty.helper}</span>
                 </div>
                 <div className="tw-difficulty-grid tw-difficulty-grid-compact">
                   {difficulties.map((difficulty) => (
@@ -382,31 +345,12 @@ function SetupScreen({
                       onClick={() => onDifficultyChange(difficulty.id)}
                     >
                       <strong>{difficulty.title}</strong>
-                      <em>{difficulty.questionLimit} 问 / {difficulty.guessLimit} 猜</em>
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="tw-setup-launch">
-                <div className="tw-summary-strip tw-summary-strip-compact">
-                  <div>
-                    <span>总席位</span>
-                    <strong>{TOTAL_SEATS}</strong>
-                  </div>
-                  <div>
-                    <span>提问上限</span>
-                    <strong>{game.questionLimit}</strong>
-                  </div>
-                  <div>
-                    <span>提交上限</span>
-                    <strong>{game.guessLimit}</strong>
-                  </div>
-                  <div>
-                    <span>当前题材</span>
-                    <strong>{selectedTheme.badge}</strong>
-                  </div>
-                </div>
+              <div className="tw-setup-cta-wrap">
                 <button className="tw-primary-cta" onClick={onStart}>
                   开始游戏
                 </button>
@@ -420,7 +364,6 @@ function SetupScreen({
             <div>
               <span className="tw-kicker">本局玩家</span>
               <h2>{TOTAL_SEATS}/{TOTAL_SEATS}</h2>
-              <p>先看谁上桌，再决定怎么开局。</p>
             </div>
           </div>
 
@@ -429,37 +372,9 @@ function SetupScreen({
               <SeatInfoCard
                 key={seat.id}
                 player={seat}
-                note={seat.type === "human" ? "准备发问" : "待命补位"}
-                showEmblem
+                note={seat.type === "human" ? "待发问" : "待补位"}
               />
             ))}
-          </div>
-
-          <div className="tw-stat-card tw-stat-card-compact">
-            <div className="tw-inline-stats tw-inline-stats-setup">
-              <div>
-                <span>主线</span>
-                <strong>{selectedTheme.badge}</strong>
-              </div>
-              <div>
-                <span>玩法节奏</span>
-                <strong>{selectedDifficulty.title}</strong>
-              </div>
-              <div>
-                <span>建议提问</span>
-                <strong>{selectedTheme.starterQuestions[0]}</strong>
-              </div>
-            </div>
-          </div>
-
-          <div className="tw-list-card tw-rules-card">
-            <h3>本局规则</h3>
-            <ul>
-              <li>每轮只允许当前席位提一个问题。</li>
-              <li>桥守只回答“是 / 否 / 无关”。</li>
-              <li>任何席位都能直接提交汤底。</li>
-              <li>次数耗尽后自动复盘。</li>
-            </ul>
           </div>
         </aside>
       </section>
@@ -530,13 +445,18 @@ function PlayScreen({
                 {game.discoveredClues.length}/{game.scenario.clueCards.length}
               </span>
             </div>
-            <ul>
+            <div className="tw-discovered-clues">
               {game.discoveredClues.length > 0 ? (
-                game.discoveredClues.map((clue) => <li key={clue}>{clue}</li>)
+                game.discoveredClues.map((clue) => (
+                  <div key={clue.id} className="tw-discovered-card">
+                    <img src={clue.image} alt={clue.title} />
+                    <strong>{clue.title}</strong>
+                  </div>
+                ))
               ) : (
-                <li>桥守还没松口，先从最反常的物件问起。</li>
+                <div className="tw-empty-note">桥守还没松口，先从最反常的物件问起。</div>
               )}
-            </ul>
+            </div>
           </div>
         </aside>
 
@@ -612,8 +532,7 @@ function PlayScreen({
           <div className="tw-panel-headline">
             <div>
               <span className="tw-kicker">席位状态</span>
-              <h2>当前桌面</h2>
-              <p>轮到谁、谁补位、谁接近答案，一眼看明白。</p>
+              <h2>本局玩家（4/4）</h2>
             </div>
           </div>
 
@@ -625,10 +544,10 @@ function PlayScreen({
                 active={player.seat === game.activeSeat}
                 note={
                   player.seat === game.activeSeat
-                    ? "当前行动席位"
+                    ? "当前行动"
                     : player.type === "human"
                       ? "等待接力"
-                      : "等待补位发问"
+                      : "待命补位"
                 }
               />
             ))}
@@ -656,15 +575,6 @@ function PlayScreen({
                 <strong>{game.guessLimit - game.guessesUsed}</strong>
               </div>
             </div>
-          </div>
-
-          <div className="tw-list-card">
-            <h3>当前题眼</h3>
-            <ul>
-              {selectedTheme.starterQuestions.map((question) => (
-                <li key={question}>{question}</li>
-              ))}
-            </ul>
           </div>
         </aside>
       </section>
@@ -735,7 +645,9 @@ function ReviewScreen({
                   <strong>{entry.speaker}</strong>
                   <p>{entry.text}</p>
                 </div>
-                {entry.clue ? <span className="tw-clue-badge is-inline">{entry.clue}</span> : null}
+                {entry.clue ? (
+                  <span className="tw-clue-badge is-inline">{entry.clue.title}</span>
+                ) : null}
               </div>
             ))}
           </div>
@@ -748,13 +660,16 @@ function ReviewScreen({
             <div className="tw-clue-grid">
               {game.scenario.clueCards.map((clue) => (
                 <div
-                  key={clue}
+                  key={clue.id}
                   className={`tw-clue-card ${
-                    game.discoveredClues.includes(clue) ? "is-found" : ""
+                    game.discoveredClues.some((card) => card.id === clue.id) ? "is-found" : ""
                   }`}
                 >
-                  <span>{game.discoveredClues.includes(clue) ? "已找到" : "未触发"}</span>
-                  <strong>{clue}</strong>
+                  <img src={clue.image} alt={clue.title} />
+                  <span>
+                    {game.discoveredClues.some((card) => card.id === clue.id) ? "已找到" : "未触发"}
+                  </span>
+                  <strong>{clue.title}</strong>
                 </div>
               ))}
             </div>
@@ -767,8 +682,17 @@ function ReviewScreen({
               <h3>完成度</h3>
               <span>{progress}%</span>
             </div>
-            <div className="tw-progress-track">
-              <span style={{ width: `${progress}%` }} />
+            <div className="tw-review-stamp-wrap">
+              <img
+                className="tw-review-stamp"
+                src={
+                  game.result?.outcome === "success"
+                    ? "/assets/emblems/emblem-settlement-stamp-v1.png"
+                    : "/assets/emblems/emblem-review-seal-v1.png"
+                }
+                alt=""
+              />
+              <div className="tw-review-stamp-value">{progress}%</div>
             </div>
             <div className="tw-inline-stats">
               <div>
@@ -883,16 +807,17 @@ export default function App() {
         if (!active || active.type !== "ai") return prev;
 
         const result = findAnswer(resolvedQuestion, prev.scenario);
+        const clueCard = getClueCardById(prev.scenario, result.clueId);
         const clues =
-          result.clue && !prev.discoveredClues.includes(result.clue)
-            ? [...prev.discoveredClues, result.clue]
+          clueCard && !prev.discoveredClues.some((card) => card.id === clueCard.id)
+            ? [...prev.discoveredClues, clueCard]
             : prev.discoveredClues;
         const updatedPlayers = prev.players.map((player) =>
           player.id === active.id
             ? {
                 ...player,
                 questionsAsked: player.questionsAsked + 1,
-                clueHits: player.clueHits + (result.clue ? 1 : 0)
+                clueHits: player.clueHits + (clueCard ? 1 : 0)
               }
             : player
         );
@@ -922,7 +847,7 @@ export default function App() {
               speaker: "桥守",
               seatId: "keeper",
               text: result.answer,
-              clue: result.clue || null
+              clue: clueCard || null
             }
           ],
           result:
@@ -982,9 +907,10 @@ export default function App() {
     }
 
     const result = findAnswer(game.pendingQuestion, game.scenario);
+    const clueCard = getClueCardById(game.scenario, result.clueId);
     const clues =
-      result.clue && !game.discoveredClues.includes(result.clue)
-        ? [...game.discoveredClues, result.clue]
+      clueCard && !game.discoveredClues.some((card) => card.id === clueCard.id)
+        ? [...game.discoveredClues, clueCard]
         : game.discoveredClues;
     const nextTotal = game.totalQuestions + 1;
     const nextSeat = game.activeSeat === TOTAL_SEATS ? 1 : game.activeSeat + 1;
@@ -1001,7 +927,7 @@ export default function App() {
           ? {
               ...player,
               questionsAsked: player.questionsAsked + 1,
-              clueHits: player.clueHits + (result.clue ? 1 : 0)
+              clueHits: player.clueHits + (clueCard ? 1 : 0)
             }
           : player
       ),
@@ -1021,7 +947,7 @@ export default function App() {
           speaker: "桥守",
           seatId: "keeper",
           text: result.answer,
-          clue: result.clue || null
+          clue: clueCard || null
         }
       ],
       result:
@@ -1282,7 +1208,7 @@ export default function App() {
       return {
         eyebrow: "设置",
         title: "当前开局参数",
-        subtitle: "保留汤屋题材，但把视觉和交互整理到更稳定的层级里。",
+        subtitle: "当前阶段先把桥守这一碗汤打磨完整，不开放多案切换。",
         children: (
           <>
             <div className="tw-modal-grid">
@@ -1294,7 +1220,7 @@ export default function App() {
                 <p>剩余席位由 AI 自动补位。</p>
               </div>
               <div className="tw-modal-card">
-                <span>主题</span>
+                <span>当前案件</span>
                 <strong>{selectedTheme.title}</strong>
                 <p>{selectedTheme.description}</p>
               </div>
@@ -1384,13 +1310,6 @@ export default function App() {
               ...prev,
               humanCount: value,
               players: buildPlayers(value)
-            }))
-          }
-          onThemeChange={(value) =>
-            setGame((prev) => ({
-              ...prev,
-              themeId: value,
-              scenario: getScenarioByTheme(value)
             }))
           }
           onDifficultyChange={(value) =>

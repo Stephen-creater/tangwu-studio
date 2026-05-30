@@ -5,18 +5,18 @@ export const DEFAULT_GUESS_LIMIT = 3;
 export const themes = [
   {
     id: "bridge",
-    title: "失忆往事",
-    subtitle: "桥雾旧案",
-    lead: "从桥、铃声与尸体状态，一层层倒推真正的死亡时间。",
-    description: "线索骨架清晰，适合第一碗汤。",
+    title: "伪时疑案",
+    subtitle: "桥雾伪证",
+    lead: "别先追桥上的呼救，先确认那声呼救是不是死者发出的。",
+    description: "单一反转更清晰，适合第一碗汤。",
     badge: "桥守线",
     image: "/assets/scenes/scene-main-bridge-v1.png",
     storyImage: "/assets/scenes/scene-bridge-house-v1.png",
     tone: "bridge",
     starterQuestions: [
-      "死者和我有关吗？",
-      "尸体真的昨夜才出现吗？",
-      "桥守的铃声是在提醒什么？"
+      "呼救的人就是死者吗？",
+      "尸体真是昨夜才落到桥下的吗？",
+      "玉佩是在她死前就握在手里的吗？"
     ]
   },
   {
@@ -114,97 +114,133 @@ export const scenarios = [
     chapter: "桥守卷一",
     title: "雾锁汤屋桥",
     setupCopy:
-      "夜里桥下出现了一具白衣尸体。桥守不阻拦你，却只肯用“是 / 否 / 无关”回答问题。",
+      "夜里桥下出现了一具白衣尸体，所有人都默认她是刚呼救后坠桥的人。桥守却只肯用“是 / 否 / 无关”回答问题。",
     opening:
       "山中有汤屋，汤屋有一桥，名曰“忘川”。你半夜听见桥上传来女子的呼救声。赶到桥边时，桥下深潭里已漂着一具白衣尸体，手里紧攥着一枚褪色玉佩。",
     summary:
-      "桥守知道昨夜的呼救只是烟幕，真正应该追问的是尸体状态、玉佩和桥下痕迹。",
+      "真正要追的不是“她为什么坠桥”，而是“桥上那声呼救到底是谁喊的”。",
     truth:
-      "死者并不是昨夜才来到桥边的陌生人，而是你失散多年的妹妹。她早在数日前身亡，被人挪到桥边伪装成昨夜坠桥。桥守的铃声并非招魂，而是在提醒你：不要只盯着桥上的“呼救”，而要追问玉佩、尸体状态和桥下痕迹。真正的凶手是同行商贩，他认出玉佩后担心旧案败露，才制造意外坠桥的假象。",
+      "昨夜桥上的呼救并不是死者发出的，而是凶手故意喊给路人听的。死者在傍晚就已经死去，夜里才被挪到桥下，手中还被塞入玉佩，伪装成她刚从桥上失足坠下。凶手制造那声呼救，不是为了求救，而是为了让你以为“她就是刚刚出事”，替这场假坠桥补上一名目击者。桥守的铃声是在提醒你：别先信那一声喊，先看尸体状态、手中的玉佩和桥下现场有没有被人摆过。",
     clueCards: [
       {
-        id: "bridge-stranger",
-        title: "死者并非陌生人",
+        id: "bridge-false-cry",
+        title: "呼救的人并不是死者",
         image: "/assets/clues/clue-jade-pendant-v1.png"
       },
       {
-        id: "bridge-timeline",
-        title: "并非昨夜才坠桥",
+        id: "bridge-early-death",
+        title: "死者早在昨夜之前身亡",
         image: "/assets/clues/clue-bridge-fibers-v1.png"
       },
       {
-        id: "bridge-old-case",
-        title: "玉佩与旧案有关",
+        id: "bridge-pendant",
+        title: "玉佩是死后被塞进手里的",
         image: "/assets/clues/clue-old-case-pendant-v1.png"
       },
       {
-        id: "bridge-warning",
-        title: "桥守的铃声是提醒",
+        id: "bridge-staged",
+        title: "桥下现场被人动过",
         image: "/assets/clues/clue-warning-bell-v1.png"
       },
       {
-        id: "bridge-staged",
-        title: "凶手试图伪装成意外",
+        id: "bridge-time-fake",
+        title: "真凶在伪造死亡时间",
         image: "/assets/clues/clue-bridge-fibers-v1.png"
       }
     ],
     keywords: [
-      ["死者", "不是", "陌生人"],
-      ["妹妹", "失散"],
-      ["尸体", "不是", "昨夜"],
-      ["玉佩", "旧案"],
-      ["商贩", "伪装", "意外"]
+      ["呼救", "不是", "死者"],
+      ["不是", "昨夜", "才死"],
+      ["尸体", "挪到", "桥下"],
+      ["玉佩", "手里"],
+      ["伪造", "死亡时间"]
     ],
     answers: [
       {
-        match: ["死者", "你", "有关"],
-        answer: "是",
-        clueId: "bridge-stranger"
-      },
-      {
-        match: ["外来", "事件"],
-        answer: "否"
-      },
-      {
-        match: ["桥", "下", "尸体", "刻意"],
-        answer: "是",
-        clueId: "bridge-staged"
+        match: ["呼救", "死者"],
+        answer: "否",
+        clueId: "bridge-false-cry"
       },
       {
         match: ["昨夜", "才", "死"],
         answer: "否",
-        clueId: "bridge-timeline"
+        clueId: "bridge-early-death"
+      },
+      {
+        match: ["早", "就", "死"],
+        answer: "是",
+        clueId: "bridge-early-death"
+      },
+      {
+        match: ["尸体", "挪", "桥下"],
+        answer: "是",
+        clueId: "bridge-staged"
+      },
+      {
+        match: ["桥下", "现场", "动过"],
+        answer: "是",
+        clueId: "bridge-staged"
       },
       {
         match: ["玉佩", "关键"],
         answer: "是",
-        clueId: "bridge-old-case"
+        clueId: "bridge-pendant"
+      },
+      {
+        match: ["玉佩", "死后", "塞"],
+        answer: "是",
+        clueId: "bridge-pendant"
+      },
+      {
+        match: ["意外", "坠桥"],
+        answer: "否",
+        clueId: "bridge-time-fake"
+      },
+      {
+        match: ["伪造", "死亡", "时间"],
+        answer: "是",
+        clueId: "bridge-time-fake"
+      },
+      {
+        match: ["死亡", "时间", "关键"],
+        answer: "是",
+        clueId: "bridge-time-fake"
+      },
+      {
+        match: ["呼救", "凶手"],
+        answer: "是",
+        clueId: "bridge-false-cry"
+      },
+      {
+        match: ["呼救", "误导"],
+        answer: "是",
+        clueId: "bridge-false-cry"
       },
       {
         match: ["桥守", "提醒"],
         answer: "是",
-        clueId: "bridge-warning"
+        clueId: "bridge-time-fake"
       }
     ],
     aiQuestions: {
       "seat-2": [
-        "这起事件和死者身份有关吗？",
-        "玉佩是不是能确认死者是谁？",
-        "昨夜的呼救声本身有误导作用吗？"
+        "桥上的呼救声并不是死者本人发出的，对吗？",
+        "玉佩更像摆出来的物件，而不是她生前一直握着的东西吗？",
+        "有人在故意把我们带去相信“她刚刚坠桥”吗？"
       ],
       "seat-3": [
         "尸体并不是昨夜才落到桥下的吗？",
-        "桥守敲铃是在提醒我们别看错重点吗？",
-        "是不是有人故意把尸体挪到了桥边？"
+        "是不是有人故意把尸体挪到了桥边？",
+        "桥守敲铃是在提醒我们别先信那声呼救吗？"
       ],
       "seat-4": [
-        "真凶更像熟人而不是路人吗？",
         "桥下痕迹比桥面本身更关键吗？",
-        "这件事与旧案有关吗？"
+        "这起事件真正关键的是死亡时间，而不是死者身份吗？",
+        "真凶是在伪造一场刚刚发生的坠桥吗？"
       ]
     },
     keeperLine:
-      "铃声不会替你们说真相，但它会告诉你们，该看向哪里。"
+      "桥上那声求救，未必是从活人嘴里替活人喊出来的。"
   },
   {
     id: "archive-secret",
@@ -318,11 +354,31 @@ export const scenarios = [
     truth:
       "你看到的并不是鬼影，而是同行者提前布置的对镜和错位灯架形成的反射。他取走了一盏灯，想把真正去过禁区的人数伪装成只有一人，从而抹掉自己先行经过的痕迹。地上的灰、少掉的那盏纸灯和镜面角度共同说明：重点不在“你看到谁”，而在有人故意制造了人数错觉。",
     clueCards: [
-      "看到的是反射而非鬼影",
-      "少掉的一盏灯非常关键",
-      "地上的灰痕说明有人先行通过",
-      "有人在制造人数错觉",
-      "同行者提前布置过镜面"
+      {
+        id: "dream-reflection",
+        title: "看到的是反射而非鬼影",
+        image: "/assets/clues/clue-warning-bell-v1.png"
+      },
+      {
+        id: "dream-lantern",
+        title: "少掉的一盏灯非常关键",
+        image: "/assets/clues/clue-warning-bell-v1.png"
+      },
+      {
+        id: "dream-dust",
+        title: "地上的灰痕说明有人先行通过",
+        image: "/assets/clues/clue-bridge-fibers-v1.png"
+      },
+      {
+        id: "dream-headcount",
+        title: "有人在制造人数错觉",
+        image: "/assets/clues/clue-jade-pendant-v1.png"
+      },
+      {
+        id: "dream-mirror",
+        title: "同行者提前布置过镜面",
+        image: "/assets/clues/clue-old-case-pendant-v1.png"
+      }
     ],
     keywords: [
       ["不是", "鬼影"],
@@ -335,32 +391,32 @@ export const scenarios = [
       {
         match: ["鬼"],
         answer: "否",
-        clue: "看到的是反射而非鬼影"
+        clueId: "dream-reflection"
       },
       {
         match: ["镜", "反射"],
         answer: "是",
-        clue: "同行者提前布置过镜面"
+        clueId: "dream-mirror"
       },
       {
         match: ["灯", "关键"],
         answer: "是",
-        clue: "少掉的一盏灯非常关键"
+        clueId: "dream-lantern"
       },
       {
         match: ["灰", "痕", "关键"],
         answer: "是",
-        clue: "地上的灰痕说明有人先行通过"
+        clueId: "dream-dust"
       },
       {
         match: ["人数", "误导"],
         answer: "是",
-        clue: "有人在制造人数错觉"
+        clueId: "dream-headcount"
       },
       {
         match: ["同行者", "提前"],
         answer: "是",
-        clue: "同行者提前布置过镜面"
+        clueId: "dream-mirror"
       }
     ],
     aiQuestions: {
