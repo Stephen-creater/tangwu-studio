@@ -194,8 +194,8 @@ button:disabled {
 }
 
 .tw-phase-pill.is-success {
-  background: rgba(44, 122, 88, 0.12);
-  color: var(--success);
+  background: rgba(141, 103, 58, 0.12);
+  color: var(--accent-strong);
 }
 
 .tw-phase-pill.is-close,
@@ -1668,7 +1668,7 @@ button:disabled {
 }
 
 .tw-result-banner.is-success {
-  background: linear-gradient(180deg, rgba(44, 122, 88, 0.92), rgba(32, 88, 63, 0.94));
+  background: linear-gradient(180deg, rgba(123, 96, 58, 0.94), rgba(92, 70, 42, 0.96));
 }
 
 .tw-result-banner.is-failed {
