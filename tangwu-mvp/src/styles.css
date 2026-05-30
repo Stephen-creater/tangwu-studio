@@ -1369,9 +1369,11 @@ button:disabled {
 
 .tw-log {
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 4px;
   display: grid;
+  align-content: start;
   gap: 12px;
 }
 

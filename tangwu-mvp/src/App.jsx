@@ -854,15 +854,24 @@ function PlayScreen({
     (game.discoveredClues.length / game.scenario.clueCards.length) * 100
   );
   const timelineRef = useRef(null);
+  const stickToBottomRef = useRef(true);
   const isHumanTurn = currentPlayer?.type === "human";
-  const visibleTimeline = game.timeline.slice(-3);
   const visibleClues = game.discoveredClues.slice(-2);
+
+  const handleTimelineScroll = () => {
+    const node = timelineRef.current;
+    if (!node) return;
+
+    const distanceToBottom = node.scrollHeight - node.scrollTop - node.clientHeight;
+    stickToBottomRef.current = distanceToBottom < 48;
+  };
 
   useEffect(() => {
     const node = timelineRef.current;
     if (!node) return;
+    if (!stickToBottomRef.current) return;
     node.scrollTo({ top: node.scrollHeight, behavior: "smooth" });
-  }, [visibleTimeline.length]);
+  }, [game.timeline.length]);
 
   return (
     <div className="tw-page-shell">
@@ -923,8 +932,8 @@ function PlayScreen({
             <div className="tw-dialog-hero-stamp">汤屋桥</div>
           </div>
 
-          <div className="tw-log" ref={timelineRef}>
-            {visibleTimeline.map((entry) => {
+          <div className="tw-log" ref={timelineRef} onScroll={handleTimelineScroll}>
+            {game.timeline.map((entry) => {
               const clueTitle = getTimelineClueTitle(entry.clue);
 
               return (
