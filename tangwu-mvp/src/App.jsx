@@ -1327,7 +1327,7 @@ export default function App() {
   ]);
 
   const handleStart = () => {
-    setActiveOverlay(null);
+    setActiveOverlay("story");
     setRuntime(createInitialRuntime());
     setGame((prev) => ({
       ...createInitialGame(prev.humanCount, prev.themeId, prev.difficultyId),
@@ -1583,18 +1583,6 @@ export default function App() {
           <>
             <div className="tw-modal-media" data-tone={selectedTheme.tone}>
               <img src={selectedTheme.image} alt={game.scenario.title} />
-            </div>
-            <div className="tw-modal-grid">
-              <div className="tw-modal-card">
-                <span>题材方向</span>
-                <strong>{selectedTheme.subtitle}</strong>
-                <p>{selectedTheme.lead}</p>
-              </div>
-              <div className="tw-modal-card">
-                <span>本局切口</span>
-                <strong>{selectedTheme.starterQuestions[0]}</strong>
-                <p>{game.scenario.summary}</p>
-              </div>
             </div>
             <div className="tw-modal-card is-full">
               <span>{game.phase === "review" ? "完整真相" : "当前汤面"}</span>
