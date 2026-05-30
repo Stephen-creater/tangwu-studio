@@ -63,8 +63,22 @@ function stripThinkTags(text) {
 
 function extractTextFromOpenAIResponse(payload) {
   const content = payload?.choices?.[0]?.message?.content;
-  if (typeof content !== "string") return "";
-  return stripThinkTags(content);
+  if (typeof content === "string") return stripThinkTags(content);
+
+  if (Array.isArray(content)) {
+    return stripThinkTags(
+      content
+        .map((part) => {
+          if (typeof part === "string") return part;
+          if (typeof part?.text === "string") return part.text;
+          if (typeof part?.content === "string") return part.content;
+          return "";
+        })
+        .join("")
+    );
+  }
+
+  return "";
 }
 
 async function handleMinimaxRequest(req, res) {
@@ -109,7 +123,6 @@ async function handleMinimaxRequest(req, res) {
         model: defaultModel,
         max_tokens: maxTokens,
         temperature: 0.2,
-        reasoning_split: true,
         messages: [{ role: "user", content: prompt }]
       })
     });

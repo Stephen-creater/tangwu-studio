@@ -7,7 +7,7 @@ import {
   getThemeById,
   seatProfiles
 } from "./gameData";
-import { generateAiQuestion, judgeGuess } from "./lib/minimax";
+import { generateAiQuestion, judgeGuess, judgeQuestion } from "./lib/minimax";
 
 const DEFAULT_SETUP = {
   humanCount: 4,
@@ -421,6 +421,7 @@ function getFallbackAiQuestion(player, scenario) {
 function createInitialRuntime() {
   return {
     aiPending: false,
+    questionPending: false,
     guessPending: false,
     engineLabel: "MiniMax M2.7 已接入，等待首轮调用",
     engineError: ""
@@ -439,6 +440,66 @@ function getTopPerformer(players) {
     const rightScore = right.correctGuesses * 5 + right.clueHits * 3 + right.questionsAsked;
     return rightScore - leftScore;
   })[0];
+}
+
+function applyQuestionResult(prev, activePlayer, questionText, result, questionType) {
+  const active =
+    prev.players.find((player) => player.id === activePlayer.id) || activePlayer;
+  const clueCard = getClueCardById(prev.scenario, result.clueId);
+  const clues =
+    clueCard && !prev.discoveredClues.some((card) => card.id === clueCard.id)
+      ? [...prev.discoveredClues, clueCard]
+      : prev.discoveredClues;
+  const nextSeat = prev.activeSeat === TOTAL_SEATS ? 1 : prev.activeSeat + 1;
+  const nextTotal = prev.totalQuestions + 1;
+  const nextPhase = nextTotal >= prev.questionLimit ? "review" : "play";
+
+  return {
+    ...prev,
+    pendingQuestion: "",
+    activeSeat: nextSeat,
+    totalQuestions: nextTotal,
+    discoveredClues: clues,
+    players: prev.players.map((player) =>
+      player.id === active.id
+        ? {
+            ...player,
+            questionsAsked: player.questionsAsked + 1,
+            clueHits: player.clueHits + (clueCard ? 1 : 0)
+          }
+        : player
+    ),
+    timeline: [
+      ...prev.timeline,
+      {
+        id: `${active.id}-question-${active.questionsAsked + 1}`,
+        type: questionType,
+        speaker: active.name,
+        seatId: active.id,
+        text: questionText,
+        clue: null
+      },
+      {
+        id: `${active.id}-answer-${active.questionsAsked + 1}`,
+        type: "keeper",
+        speaker: "桥守",
+        seatId: "keeper",
+        text: result.answer,
+        clue: clueCard || null
+      }
+    ],
+    result:
+      nextPhase === "review"
+        ? {
+            outcome: "failed",
+            title: "迷雾未散",
+            note: "提问次数已经耗尽，桥守只好把真相完整摊开。"
+          }
+        : prev.result?.outcome === "close"
+          ? null
+          : prev.result,
+    phase: nextPhase
+  };
 }
 
 function OverlayModal({ open, eyebrow, title, subtitle, onClose, children, footer }) {
@@ -808,19 +869,26 @@ function PlayScreen({
                 onChange={(event) => onQuestionChange(event.target.value)}
                 placeholder={
                   isHumanTurn
-                    ? `例如：${selectedTheme.starterQuestions[0]}`
+                    ? runtime.questionPending
+                      ? "MiniMax 正在判断桥守该如何回答……"
+                      : `例如：${selectedTheme.starterQuestions[0]}`
                     : runtime.aiPending
                       ? "MiniMax 正在为 AI 席位生成问题……"
                       : "当前不是人类席位，桥守正在等待 AI 行动。"
                 }
-                disabled={!isHumanTurn || runtime.guessPending}
+                disabled={!isHumanTurn || runtime.questionPending || runtime.guessPending}
               />
               <button
                 className="tw-composer-submit"
-                disabled={!isHumanTurn || runtime.guessPending || !game.pendingQuestion.trim()}
+                disabled={
+                  !isHumanTurn ||
+                  runtime.questionPending ||
+                  runtime.guessPending ||
+                  !game.pendingQuestion.trim()
+                }
                 onClick={onAskQuestion}
               >
-                {runtime.aiPending ? "等待 AI..." : "提问"}
+                {runtime.questionPending ? "判断中..." : runtime.aiPending ? "等待 AI..." : "提问"}
               </button>
             </div>
             <div className="tw-composer-meta">
@@ -1117,6 +1185,37 @@ export default function App() {
         }
       }
 
+      let result;
+      try {
+        if (!cancelled) {
+          setRuntime((prev) => ({
+            ...prev,
+            aiPending: true,
+            engineError: "",
+            engineLabel: "MiniMax M2.7 正在判断桥守回应"
+          }));
+        }
+        result = await judgeQuestion(game, resolvedQuestion);
+        if (!cancelled) {
+          setRuntime((prev) => ({
+            ...prev,
+            aiPending: false,
+            engineError: "",
+            engineLabel: "MiniMax M2.7 已完成桥守回应判断"
+          }));
+        }
+      } catch (error) {
+        result = findAnswer(resolvedQuestion, game.scenario);
+        if (!cancelled) {
+          setRuntime((prev) => ({
+            ...prev,
+            aiPending: false,
+            engineLabel: "MiniMax 判断暂时不可用，本轮改用本地语义判定",
+            engineError: error instanceof Error ? error.message : String(error)
+          }));
+        }
+      }
+
       if (cancelled) return;
       setGame((prev) => {
         if (prev.phase !== "play") return prev;
@@ -1124,62 +1223,7 @@ export default function App() {
         const active = prev.players.find((player) => player.seat === prev.activeSeat);
         if (!active || active.type !== "ai") return prev;
 
-        const result = findAnswer(resolvedQuestion, prev.scenario);
-        const clueCard = getClueCardById(prev.scenario, result.clueId);
-        const clues =
-          clueCard && !prev.discoveredClues.some((card) => card.id === clueCard.id)
-            ? [...prev.discoveredClues, clueCard]
-            : prev.discoveredClues;
-        const updatedPlayers = prev.players.map((player) =>
-          player.id === active.id
-            ? {
-                ...player,
-                questionsAsked: player.questionsAsked + 1,
-                clueHits: player.clueHits + (clueCard ? 1 : 0)
-              }
-            : player
-        );
-        const nextSeat = prev.activeSeat === TOTAL_SEATS ? 1 : prev.activeSeat + 1;
-        const nextTotal = prev.totalQuestions + 1;
-        const nextPhase = nextTotal >= prev.questionLimit ? "review" : "play";
-
-        return {
-          ...prev,
-          players: updatedPlayers,
-          activeSeat: nextSeat,
-          totalQuestions: nextTotal,
-          discoveredClues: clues,
-          timeline: [
-            ...prev.timeline,
-            {
-              id: `${active.id}-question-${active.questionsAsked + 1}`,
-              type: "ai",
-              speaker: active.name,
-              seatId: active.id,
-              text: resolvedQuestion,
-              clue: null
-            },
-            {
-              id: `${active.id}-answer-${active.questionsAsked + 1}`,
-              type: "keeper",
-              speaker: "桥守",
-              seatId: "keeper",
-              text: result.answer,
-              clue: clueCard || null
-            }
-          ],
-          result:
-            nextPhase === "review"
-              ? {
-                  outcome: "failed",
-                  title: "迷雾未散",
-                  note: "提问次数已经耗尽，桥守只好把真相完整摊开。"
-                }
-              : prev.result?.outcome === "close"
-                ? null
-                : prev.result,
-          phase: nextPhase
-        };
+        return applyQuestionResult(prev, active, resolvedQuestion, result, "ai");
       });
     }, 950);
 
@@ -1214,72 +1258,53 @@ export default function App() {
     setGame((prev) => ({ ...prev, pendingGuess: value }));
   };
 
-  const handleAskQuestion = () => {
+  const handleAskQuestion = async () => {
     if (
       !currentPlayer ||
       currentPlayer.type !== "human" ||
+      runtime.questionPending ||
       runtime.guessPending ||
       !game.pendingQuestion.trim()
     ) {
       return;
     }
 
-    const result = findAnswer(game.pendingQuestion, game.scenario);
-    const clueCard = getClueCardById(game.scenario, result.clueId);
-    const clues =
-      clueCard && !game.discoveredClues.some((card) => card.id === clueCard.id)
-        ? [...game.discoveredClues, clueCard]
-        : game.discoveredClues;
-    const nextTotal = game.totalQuestions + 1;
-    const nextSeat = game.activeSeat === TOTAL_SEATS ? 1 : game.activeSeat + 1;
-    const nextPhase = nextTotal >= game.questionLimit ? "review" : "play";
+    const active = currentPlayer;
+    const questionText = game.pendingQuestion.trim();
+    let result;
 
-    setGame((prev) => ({
-      ...prev,
-      pendingQuestion: "",
-      totalQuestions: nextTotal,
-      activeSeat: nextSeat,
-      discoveredClues: clues,
-      players: prev.players.map((player) =>
-        player.id === currentPlayer.id
-          ? {
-              ...player,
-              questionsAsked: player.questionsAsked + 1,
-              clueHits: player.clueHits + (clueCard ? 1 : 0)
-            }
-          : player
-      ),
-      timeline: [
-        ...prev.timeline,
-        {
-          id: `${currentPlayer.id}-question-${currentPlayer.questionsAsked + 1}`,
-          type: "human",
-          speaker: currentPlayer.name,
-          seatId: currentPlayer.id,
-          text: prev.pendingQuestion,
-          clue: null
-        },
-        {
-          id: `${currentPlayer.id}-answer-${currentPlayer.questionsAsked + 1}`,
-          type: "keeper",
-          speaker: "桥守",
-          seatId: "keeper",
-          text: result.answer,
-          clue: clueCard || null
-        }
-      ],
-      result:
-        nextPhase === "review"
-          ? {
-              outcome: "failed",
-              title: "迷雾未散",
-              note: "提问次数已经耗尽，桥守只好把真相完整摊开。"
-            }
-          : prev.result?.outcome === "close"
-            ? null
-            : prev.result,
-      phase: nextPhase
-    }));
+    try {
+      setRuntime((prev) => ({
+        ...prev,
+        questionPending: true,
+        engineError: "",
+        engineLabel: "MiniMax M2.7 正在判断桥守回应"
+      }));
+      result = await judgeQuestion(game, questionText);
+      setRuntime((prev) => ({
+        ...prev,
+        questionPending: false,
+        engineError: "",
+        engineLabel: "MiniMax M2.7 已完成桥守回应判断"
+      }));
+    } catch (error) {
+      result = findAnswer(questionText, game.scenario);
+      setRuntime((prev) => ({
+        ...prev,
+        questionPending: false,
+        engineLabel: "MiniMax 判断暂时不可用，本轮改用本地语义判定",
+        engineError: error instanceof Error ? error.message : String(error)
+      }));
+    }
+
+    setGame((prev) => {
+      if (prev.phase !== "play") return prev;
+      const stillActive = prev.players.find((player) => player.seat === prev.activeSeat);
+      if (!stillActive || stillActive.id !== active.id || stillActive.type !== "human") {
+        return prev;
+      }
+      return applyQuestionResult(prev, stillActive, questionText, result, "human");
+    });
   };
 
   const handleSubmitGuess = async () => {

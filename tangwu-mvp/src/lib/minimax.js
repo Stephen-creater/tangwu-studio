@@ -47,6 +47,24 @@ function inferGuessOutcome(text) {
   return null;
 }
 
+function inferQuestionAnswer(text) {
+  const trimmed = text.trim();
+  if (/^yes$/i.test(trimmed) || /^是$/.test(trimmed) || /"answer"\s*:\s*"是"/.test(trimmed)) {
+    return "是";
+  }
+  if (/^no$/i.test(trimmed) || /^否$/.test(trimmed) || /"answer"\s*:\s*"否"/.test(trimmed)) {
+    return "否";
+  }
+  if (
+    /^irrelevant$/i.test(trimmed) ||
+    /^无关$/.test(trimmed) ||
+    /"answer"\s*:\s*"无关"/.test(trimmed)
+  ) {
+    return "无关";
+  }
+  return null;
+}
+
 function isUsableQuestion(text) {
   return Boolean(text) && text.length <= 30 && /[？?]$/.test(text) && !/[A-Za-z]/.test(text);
 }
@@ -88,6 +106,24 @@ function buildRecentTimeline(game) {
     .join("\n");
 }
 
+function formatDiscoveredClues(game) {
+  if (!game.discoveredClues.length) return "暂无";
+  return game.discoveredClues.map((clue) => clue.title || clue.id || String(clue)).join("；");
+}
+
+function formatClueOptions(game) {
+  return game.scenario.clueCards
+    .map((clue) => `${clue.id}：${clue.title}`)
+    .join("\n");
+}
+
+function normalizeClueId(game, clueId) {
+  if (typeof clueId !== "string") return null;
+  const trimmed = clueId.trim();
+  if (!trimmed || trimmed === "null" || trimmed === "无") return null;
+  return game.scenario.clueCards.some((clue) => clue.id === trimmed) ? trimmed : null;
+}
+
 export async function generateAiQuestion(game, player) {
   const prompt = [
     "你是中文海龟汤游戏里的 AI 队友。",
@@ -96,9 +132,7 @@ export async function generateAiQuestion(game, player) {
     "",
     `故事标题：${game.scenario.title}`,
     `题面：${game.scenario.opening}`,
-    `已发现线索：${
-      game.discoveredClues.length > 0 ? game.discoveredClues.join("；") : "暂无"
-    }`,
+    `已发现线索：${formatDiscoveredClues(game)}`,
     `当前玩家：${player.seat}号 ${player.name}`,
     `最近对话：\n${buildRecentTimeline(game)}`,
     "只输出问题本身。"
@@ -114,6 +148,42 @@ export async function generateAiQuestion(game, player) {
   }
 
   return question.replace(/^["'“”]+|["'“”]+$/g, "");
+}
+
+export async function judgeQuestion(game, question) {
+  const prompt = [
+    "你是中文海龟汤游戏的桥守。",
+    "玩家会问一个只能回答“是 / 否 / 无关”的问题。",
+    "请严格根据题面与标准真相判断这个问题的答案。",
+    "如果问题与谜题真相、关键线索、人物行为、时间线、物证或现场无关，回答“无关”。",
+    "如果命中或接近某条关键线索，请给出对应 clueId；如果没有明确线索，clueId 为 null。",
+    "不要解释，不要泄露额外真相，不要输出 Markdown。",
+    "只输出 JSON，格式必须是：{\"answer\":\"是|否|无关\",\"clueId\":\"线索ID或null\"}",
+    "",
+    `故事标题：${game.scenario.title}`,
+    `题面：${game.scenario.opening}`,
+    `标准真相：${game.scenario.truth}`,
+    `可用线索：\n${formatClueOptions(game)}`,
+    `已发现线索：${formatDiscoveredClues(game)}`,
+    `最近对话：\n${buildRecentTimeline(game)}`,
+    `玩家问题：${question}`
+  ].join("\n");
+
+  const text = await callMiniMax(prompt, 1000);
+  const parsed = parseJsonObject(text);
+  const answer =
+    parsed?.answer === "是" || parsed?.answer === "否" || parsed?.answer === "无关"
+      ? parsed.answer
+      : inferQuestionAnswer(text);
+
+  if (!answer) {
+    throw new Error("MiniMax did not return a valid question judgement.");
+  }
+
+  return {
+    answer,
+    clueId: answer === "无关" ? null : normalizeClueId(game, parsed?.clueId)
+  };
 }
 
 export async function judgeGuess(game, guess) {
