@@ -336,6 +336,10 @@ button:disabled {
   overflow: auto;
 }
 
+.tw-setup-main {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
 .tw-play-layout .tw-center-panel {
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
@@ -568,7 +572,7 @@ button:disabled {
 
 .tw-keeper-showcase-art {
   position: relative;
-  aspect-ratio: 0.86 / 1;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
   background: #19130f;
 }
@@ -683,6 +687,7 @@ button:disabled {
 
 .tw-setup-hero {
   min-height: 220px;
+  height: 100%;
 }
 
 .tw-setup-hero-copy {
