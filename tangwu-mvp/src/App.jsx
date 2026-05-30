@@ -5,7 +5,8 @@ import {
   getDifficultyConfig,
   getScenarioByTheme,
   getThemeById,
-  seatProfiles
+  seatProfiles,
+  themes
 } from "./gameData";
 import { generateAiQuestion, judgeGuess } from "./lib/minimax";
 
@@ -117,6 +118,117 @@ function createInitialRuntime() {
   };
 }
 
+function createPreviewGame(mode) {
+  const previewBase = createInitialGame(
+    DEFAULT_SETUP.humanCount,
+    DEFAULT_SETUP.themeId,
+    DEFAULT_SETUP.difficultyId
+  );
+
+  const firstClue = getClueCardById(previewBase.scenario, "bridge-false-cry");
+  const secondClue = getClueCardById(previewBase.scenario, "bridge-time-fake");
+  const discoveredClues = [firstClue, secondClue].filter(Boolean);
+
+  const previewPlay = {
+    ...previewBase,
+    phase: mode === "review" ? "review" : "play",
+    totalQuestions: 3,
+    guessesUsed: mode === "review" ? 1 : 0,
+    activeSeat: 2,
+    discoveredClues,
+    players: previewBase.players.map((player, index) => ({
+      ...player,
+      questionsAsked: index === 0 ? 2 : index === 1 ? 1 : 0,
+      clueHits: index === 0 ? 1 : index === 1 ? 1 : 0,
+      correctGuesses: mode === "review" && index === 0 ? 1 : 0
+    })),
+    timeline: [
+      {
+        id: "opening-1",
+        type: "keeper",
+        speaker: "桥守",
+        seatId: "keeper",
+        text: "桥上那声求救，未必是从活人嘴里替活人喊出来的。",
+        clue: null
+      },
+      {
+        id: "seat-1-question-1",
+        type: "human",
+        speaker: "你",
+        seatId: "seat-1",
+        text: "呼救的人就是死者吗？",
+        clue: null
+      },
+      {
+        id: "seat-1-answer-1",
+        type: "keeper",
+        speaker: "桥守",
+        seatId: "keeper",
+        text: "否。",
+        clue: firstClue || null
+      },
+      {
+        id: "seat-1-question-2",
+        type: "human",
+        speaker: "你",
+        seatId: "seat-1",
+        text: "有人在伪造这场坠桥的发生时间吗？",
+        clue: null
+      },
+      {
+        id: "seat-1-answer-2",
+        type: "keeper",
+        speaker: "桥守",
+        seatId: "keeper",
+        text: "是。",
+        clue: secondClue || null
+      },
+      {
+        id: "seat-2-question-1",
+        type: "ai",
+        speaker: "同行者甲",
+        seatId: "seat-2",
+        text: "玉佩是在死后才被塞进她手里的吗？",
+        clue: null
+      },
+      {
+        id: "seat-2-answer-1",
+        type: "keeper",
+        speaker: "桥守",
+        seatId: "keeper",
+        text: "是。",
+        clue: null
+      }
+    ],
+    pendingQuestion: "",
+    pendingGuess: "",
+    result:
+      mode === "review"
+        ? {
+            outcome: "success",
+            title: "真相揭晓",
+            note: "你已经抓住了真正的因果链。"
+          }
+        : null
+  };
+
+  if (mode === "review") {
+    previewPlay.timeline = [
+      ...previewPlay.timeline,
+      {
+        id: "guess-1",
+        type: "human",
+        speaker: "你",
+        seatId: "seat-1",
+        text: "我已知晓真相：桥上的呼救声是凶手喊的，死者早在昨夜前就已身亡。",
+        clue: null
+      }
+    ];
+  }
+
+  return previewPlay;
+}
+
 function getPhaseLabel(phase) {
   if (phase === "play") return "对局中";
   if (phase === "review") return "复盘";
@@ -161,8 +273,7 @@ function TopBar({
   onOpenStory,
   onOpenRules,
   onOpenSettings,
-  onOpenReview,
-  onPrimaryAction
+  onOpenReview
 }) {
   return (
     <header className="tw-header">
@@ -198,9 +309,6 @@ function TopBar({
         <button className="tw-toolbar-button" onClick={onOpenSettings}>
           设置
         </button>
-        <button className="tw-toolbar-button is-primary" onClick={onPrimaryAction}>
-          {phase === "setup" ? "恢复默认" : "返回开局"}
-        </button>
       </div>
     </header>
   );
@@ -235,11 +343,26 @@ function SeatInfoCard({ player, note, active = false, showEmblem = false }) {
   );
 }
 
+function PerformanceRow({ player }) {
+  return (
+    <div className="tw-performance-row">
+      <img className="tw-performance-avatar" src={player.avatar} alt={player.name} />
+      <div className="tw-performance-copy">
+        <strong>{player.name}</strong>
+        <span>
+          提问 {player.questionsAsked} · 线索 {player.clueHits} · 命中 {player.correctGuesses}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function SetupScreen({
   game,
   selectedTheme,
   selectedDifficulty,
   onHumanCountChange,
+  onThemeChange,
   onDifficultyChange,
   onOpenStory,
   onOpenRules,
@@ -257,7 +380,6 @@ function SetupScreen({
         onOpenStory={onOpenStory}
         onOpenRules={onOpenRules}
         onOpenSettings={onOpenSettings}
-        onPrimaryAction={onReset}
       />
 
       <section className="tw-layout tw-setup-layout">
@@ -325,6 +447,29 @@ function SetupScreen({
                     onClick={() => onHumanCountChange(count)}
                   >
                     {count} 人
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="tw-setup-board-row tw-setup-board-row-compact">
+              <div className="tw-block-head">
+                <h3>主题选择</h3>
+              </div>
+              <div className="tw-theme-grid tw-theme-grid-compact">
+                {themes.map((theme) => (
+                  <button
+                    key={theme.id}
+                    className={`tw-theme-card ${game.themeId === theme.id ? "is-active" : ""}`}
+                    onClick={() => onThemeChange(theme.id)}
+                  >
+                    <div className="tw-theme-thumb" data-tone={theme.tone}>
+                      <img src={theme.image} alt={theme.title} />
+                      <span>{theme.badge}</span>
+                    </div>
+                    <div className="tw-theme-copy">
+                      <strong>{theme.title}</strong>
+                    </div>
                   </button>
                 ))}
               </div>
@@ -402,12 +547,14 @@ function PlayScreen({
   );
   const timelineRef = useRef(null);
   const isHumanTurn = currentPlayer?.type === "human";
+  const visibleTimeline = game.timeline.slice(-3);
+  const visibleClues = game.discoveredClues.slice(-2);
 
   useEffect(() => {
     const node = timelineRef.current;
     if (!node) return;
     node.scrollTo({ top: node.scrollHeight, behavior: "smooth" });
-  }, [game.timeline.length]);
+  }, [visibleTimeline.length]);
 
   return (
     <div className="tw-page-shell">
@@ -418,7 +565,6 @@ function PlayScreen({
         onOpenStory={onOpenStory}
         onOpenRules={onOpenRules}
         onOpenSettings={onOpenSettings}
-        onPrimaryAction={onBackToSetup}
       />
 
       <section className="tw-layout tw-play-layout">
@@ -445,11 +591,10 @@ function PlayScreen({
                 {game.discoveredClues.length}/{game.scenario.clueCards.length}
               </span>
             </div>
-            <div className="tw-discovered-clues">
-              {game.discoveredClues.length > 0 ? (
-                game.discoveredClues.map((clue) => (
+            <div className="tw-discovered-clues is-compact">
+              {visibleClues.length > 0 ? (
+                visibleClues.map((clue) => (
                   <div key={clue.id} className="tw-discovered-card">
-                    <img src={clue.image} alt={clue.title} />
                     <strong>{clue.title}</strong>
                   </div>
                 ))
@@ -471,7 +616,7 @@ function PlayScreen({
           </div>
 
           <div className="tw-log" ref={timelineRef}>
-            {game.timeline.map((entry) => (
+            {visibleTimeline.map((entry) => (
               <article
                 key={entry.id}
                 className={`tw-log-row is-${entry.type} ${
@@ -481,7 +626,7 @@ function PlayScreen({
                 <div className="tw-log-speaker">{entry.speaker}</div>
                 <div className="tw-log-bubble">
                   <p>{entry.text}</p>
-                  {entry.clue ? <span className="tw-clue-badge">{entry.clue}</span> : null}
+                  {entry.clue ? <span className="tw-clue-badge">{entry.clue.title}</span> : null}
                 </div>
               </article>
             ))}
@@ -595,6 +740,15 @@ function ReviewScreen({
     (game.discoveredClues.length / game.scenario.clueCards.length) * 100
   );
   const champion = getTopPerformer(game.players);
+  const filteredReviewEntries = game.timeline.filter((entry, index) => {
+    if (index === 0) return true;
+    if (entry.type === "human") return true;
+    return Boolean(entry.clue);
+  });
+  const reviewEntries =
+    filteredReviewEntries.length <= 3
+      ? filteredReviewEntries
+      : [filteredReviewEntries[0], ...filteredReviewEntries.slice(-2)];
 
   return (
     <div className="tw-page-shell">
@@ -606,7 +760,6 @@ function ReviewScreen({
         onOpenRules={onOpenRules}
         onOpenSettings={onOpenSettings}
         onOpenReview={onOpenReview}
-        onPrimaryAction={onRestart}
       />
 
       <section className="tw-layout tw-review-layout">
@@ -624,7 +777,7 @@ function ReviewScreen({
 
           <div className="tw-list-card">
             <h3>{game.scenario.title}</h3>
-            <p>{game.scenario.truth}</p>
+            <p>{game.scenario.summary}</p>
           </div>
         </aside>
 
@@ -638,7 +791,7 @@ function ReviewScreen({
           </div>
 
           <div className="tw-review-list">
-            {game.timeline.map((entry, index) => (
+            {reviewEntries.map((entry, index) => (
               <div key={entry.id} className="tw-review-row">
                 <div className="tw-review-index">{index + 1}</div>
                 <div className="tw-review-card">
@@ -650,29 +803,6 @@ function ReviewScreen({
                 ) : null}
               </div>
             ))}
-          </div>
-
-          <div className="tw-list-card">
-            <div className="tw-block-head">
-              <h3>关键线索总表</h3>
-              <span>{game.discoveredClues.length} 条已解锁</span>
-            </div>
-            <div className="tw-clue-grid">
-              {game.scenario.clueCards.map((clue) => (
-                <div
-                  key={clue.id}
-                  className={`tw-clue-card ${
-                    game.discoveredClues.some((card) => card.id === clue.id) ? "is-found" : ""
-                  }`}
-                >
-                  <img src={clue.image} alt={clue.title} />
-                  <span>
-                    {game.discoveredClues.some((card) => card.id === clue.id) ? "已找到" : "未触发"}
-                  </span>
-                  <strong>{clue.title}</strong>
-                </div>
-              ))}
-            </div>
           </div>
         </main>
 
@@ -710,13 +840,9 @@ function ReviewScreen({
             </div>
           </div>
 
-          <div className="tw-seat-stack">
+          <div className="tw-performance-stack">
             {game.players.map((player) => (
-              <SeatInfoCard
-                key={player.id}
-                player={player}
-                note={`提问 ${player.questionsAsked} · 线索 ${player.clueHits} · 命中 ${player.correctGuesses}`}
-              />
+              <PerformanceRow key={player.id} player={player} />
             ))}
           </div>
 
@@ -730,13 +856,20 @@ function ReviewScreen({
 }
 
 export default function App() {
-  const [game, setGame] = useState(() =>
-    createInitialGame(
+  const [game, setGame] = useState(() => {
+    if (typeof window !== "undefined") {
+      const preview = new URLSearchParams(window.location.search).get("preview");
+      if (preview === "play" || preview === "review") {
+        return createPreviewGame(preview);
+      }
+    }
+
+    return createInitialGame(
       DEFAULT_SETUP.humanCount,
       DEFAULT_SETUP.themeId,
       DEFAULT_SETUP.difficultyId
-    )
-  );
+    );
+  });
   const [activeOverlay, setActiveOverlay] = useState(null);
   const [runtime, setRuntime] = useState(() => createInitialRuntime());
 
@@ -1310,6 +1443,13 @@ export default function App() {
               ...prev,
               humanCount: value,
               players: buildPlayers(value)
+            }))
+          }
+          onThemeChange={(value) =>
+            setGame((prev) => ({
+              ...prev,
+              themeId: value,
+              scenario: getScenarioByTheme(value)
             }))
           }
           onDifficultyChange={(value) =>

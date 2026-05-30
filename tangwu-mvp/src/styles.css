@@ -344,6 +344,23 @@ button:disabled {
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
+.tw-play-layout .tw-story-panel,
+.tw-play-layout .tw-center-panel,
+.tw-review-layout .tw-story-panel,
+.tw-review-layout .tw-center-panel,
+.tw-review-layout .tw-side-panel {
+  overflow: hidden;
+}
+
+.tw-play-layout .tw-story-panel .tw-media-frame,
+.tw-review-layout .tw-story-panel .tw-media-frame {
+  min-height: 180px;
+}
+
+.tw-play-layout .tw-center-panel .tw-dialog-hero {
+  min-height: 200px;
+}
+
 .tw-play-layout .tw-side-panel .tw-panel-headline h2 {
   font-size: 24px;
 }
@@ -572,7 +589,7 @@ button:disabled {
 
 .tw-keeper-showcase-art {
   position: relative;
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 1.16 / 1;
   overflow: hidden;
   background: #19130f;
 }
@@ -603,7 +620,7 @@ button:disabled {
   top: 18px;
   left: 22px;
   color: rgba(255, 243, 225, 0.94);
-  font-size: 52px;
+  font-size: 44px;
   line-height: 0.92;
   writing-mode: vertical-rl;
   letter-spacing: 0.12em;
@@ -625,22 +642,23 @@ button:disabled {
 
 .tw-keeper-showcase-copy {
   display: grid;
-  gap: 12px;
-  padding: 18px 20px 20px;
+  gap: 8px;
+  padding: 14px 16px 16px;
   color: rgba(255, 243, 225, 0.9);
 }
 
 .tw-keeper-showcase-copy blockquote {
   margin: 0;
   color: rgba(255, 236, 204, 0.92);
-  font-size: 18px;
-  line-height: 1.7;
+  font-size: 16px;
+  line-height: 1.55;
 }
 
 .tw-keeper-showcase-copy p {
   margin: 0;
   color: rgba(255, 233, 203, 0.74);
-  line-height: 1.8;
+  line-height: 1.65;
+  font-size: 14px;
 }
 
 .tw-story-dossier .tw-block-head h3 {
@@ -686,7 +704,7 @@ button:disabled {
 }
 
 .tw-setup-hero {
-  min-height: 220px;
+  min-height: 190px;
   height: 100%;
 }
 
@@ -703,7 +721,7 @@ button:disabled {
 .tw-setup-hero-copy h2 {
   margin: 0;
   color: rgba(255, 243, 225, 0.96);
-  font-size: 40px;
+  font-size: 34px;
   line-height: 1;
 }
 
@@ -711,12 +729,12 @@ button:disabled {
   margin: 0;
   color: rgba(255, 241, 221, 0.78);
   line-height: 1.5;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .tw-setup-board {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .tw-setup-board-row {
@@ -742,7 +760,7 @@ button:disabled {
 }
 
 .tw-segment-grid-compact .tw-segment-button {
-  min-height: 48px;
+  min-height: 44px;
 }
 
 .tw-theme-grid-compact {
@@ -773,7 +791,7 @@ button:disabled {
 }
 
 .tw-difficulty-grid-compact .tw-difficulty-card {
-  min-height: 54px;
+  min-height: 48px;
   padding: 0 14px;
   display: flex;
   align-items: center;
@@ -781,11 +799,16 @@ button:disabled {
 }
 
 .tw-difficulty-grid-compact .tw-difficulty-card strong {
-  font-size: 17px;
+  font-size: 16px;
 }
 
 .tw-setup-launch {
   padding-top: 2px;
+}
+
+.tw-setup-cta-wrap .tw-primary-cta {
+  min-height: 48px;
+  font-size: 18px;
 }
 
 .tw-rule-grid {
@@ -892,6 +915,21 @@ button:disabled {
 
 .tw-discovered-card strong {
   line-height: 1.58;
+}
+
+.tw-discovered-clues.is-compact {
+  gap: 8px;
+}
+
+.tw-discovered-clues.is-compact .tw-discovered-card {
+  grid-template-columns: 1fr;
+  gap: 0;
+  padding: 10px 12px;
+}
+
+.tw-discovered-clues.is-compact .tw-discovered-card strong {
+  font-size: 15px;
+  line-height: 1.45;
 }
 
 .tw-list-card li {
@@ -1203,6 +1241,48 @@ button:disabled {
   opacity: 0.34;
 }
 
+.tw-performance-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.tw-performance-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(141, 103, 58, 0.14);
+  background: rgba(255, 250, 242, 0.64);
+}
+
+.tw-performance-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid rgba(141, 103, 58, 0.18);
+}
+
+.tw-performance-copy {
+  min-width: 0;
+}
+
+.tw-performance-copy strong {
+  display: block;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.tw-performance-copy span {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .tw-panel-headline p,
 .tw-modal-head p,
 .tw-copy-block p,
@@ -1289,7 +1369,7 @@ button:disabled {
 
 .tw-log {
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   padding-right: 4px;
   display: grid;
   gap: 12px;
@@ -1598,6 +1678,7 @@ button:disabled {
 .tw-review-list {
   display: grid;
   gap: 14px;
+  overflow: hidden;
 }
 
 .tw-review-row {
