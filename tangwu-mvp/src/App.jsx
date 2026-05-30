@@ -67,8 +67,312 @@ function normalize(text) {
     .toLowerCase();
 }
 
+const negationTerms = ["不是", "并不是", "并非", "没有", "不算", "非"];
+
+const semanticAnswerRules = {
+  "bridge-night": [
+    {
+      all: [
+        ["呼救", "求救", "喊救命", "喊声", "叫声", "声音", "那声"],
+        ["死者", "本人", "她本人", "受害者", "白衣女子", "尸体"]
+      ],
+      negatedAnswer: "是",
+      answer: "否",
+      clueId: "bridge-false-cry"
+    },
+    {
+      all: [
+        ["呼救", "求救", "喊救命", "喊声", "叫声", "声音", "那声"],
+        ["凶手", "真凶", "犯人", "作案人", "别人", "有人", "伪装", "误导"]
+      ],
+      answer: "是",
+      clueId: "bridge-false-cry"
+    },
+    {
+      all: [
+        ["尸体", "死者", "受害者"],
+        ["昨夜", "半夜", "刚刚", "刚才", "听到以后", "呼救后"],
+        ["坠桥", "掉下", "落到", "落下", "桥下", "死"]
+      ],
+      negatedAnswer: "是",
+      answer: "否",
+      clueId: "bridge-early-death"
+    },
+    {
+      all: [
+        ["死者", "受害者", "尸体"],
+        ["早就", "之前", "傍晚", "提前", "早已", "先死"]
+      ],
+      answer: "是",
+      clueId: "bridge-early-death"
+    },
+    {
+      all: [
+        ["尸体", "现场", "桥下", "桥边"],
+        ["挪", "搬", "移动", "摆", "布置", "动过", "伪造"]
+      ],
+      answer: "是",
+      clueId: "bridge-staged"
+    },
+    {
+      all: [
+        ["玉佩", "玉坠", "玉", "佩饰"],
+        ["死后", "塞", "放进", "摆", "伪装", "手里", "关键", "重要"]
+      ],
+      answer: "是",
+      clueId: "bridge-pendant"
+    },
+    {
+      all: [
+        ["意外", "失足", "坠桥", "自杀"],
+        ["真的", "真实", "自然", "单纯"]
+      ],
+      answer: "否",
+      clueId: "bridge-time-fake"
+    },
+    {
+      all: [
+        ["伪造", "假装", "制造", "误导", "骗局", "故意", "相信"],
+        ["死亡时间", "时间", "刚刚", "昨夜", "坠桥"]
+      ],
+      answer: "是",
+      clueId: "bridge-time-fake"
+    },
+    {
+      all: [
+        ["桥下", "现场", "痕迹", "桥面"],
+        ["关键", "重要", "可疑", "反常"]
+      ],
+      answer: "是",
+      clueId: "bridge-staged"
+    },
+    {
+      any: ["谋杀", "他杀", "被杀", "凶杀", "杀人", "凶手", "真凶", "作案"],
+      answer: "是",
+      clueId: "bridge-false-cry"
+    },
+    {
+      any: ["呼救", "求救", "喊救命", "喊声", "叫声", "声音", "那声"],
+      answer: "是",
+      clueId: "bridge-false-cry"
+    },
+    {
+      any: ["意外", "失足", "自杀"],
+      answer: "否",
+      clueId: "bridge-time-fake"
+    },
+    {
+      any: ["尸体", "桥下", "桥边", "现场", "痕迹", "挪动", "移动"],
+      answer: "是",
+      clueId: "bridge-staged"
+    },
+    {
+      any: ["玉佩", "玉坠", "佩饰"],
+      answer: "是",
+      clueId: "bridge-pendant"
+    },
+    {
+      any: ["死亡时间", "死亡", "时间", "昨夜", "刚刚", "坠桥"],
+      answer: "是",
+      clueId: "bridge-time-fake"
+    }
+  ],
+  "archive-secret": [
+    {
+      all: [["鬼", "闹鬼", "灵异", "鬼影", "超自然"]],
+      negatedAnswer: "是",
+      answer: "否"
+    },
+    {
+      all: [
+        ["屋里", "宅里", "家里", "古屋", "旧宅"],
+        ["第三个人", "三个人", "不止两个人", "还有人", "藏着人"]
+      ],
+      answer: "是",
+      clueId: "archive-third-person"
+    },
+    {
+      all: [
+        ["第三只碗", "第三套餐具", "碗", "餐具"],
+        ["关键", "重要", "误放", "多出来", "人为"]
+      ],
+      negatedAnswer: "否",
+      answer: "是",
+      clueId: "archive-third-bowl"
+    },
+    {
+      all: [
+        ["药", "药渍", "药汤", "服药"],
+        ["长期", "固定", "病", "老人", "关键", "重要", "照顾", "某个人"]
+      ],
+      answer: "是",
+      clueId: "archive-medicine"
+    },
+    {
+      all: [
+        ["扶手", "楼梯", "磨痕", "痕迹"],
+        ["借力", "行动不便", "长期", "走路", "搀扶"]
+      ],
+      answer: "是",
+      clueId: "archive-railing"
+    },
+    {
+      all: [
+        ["屋主", "主人", "房主"],
+        ["隐瞒", "藏", "撒谎", "没说实话"],
+        ["家人", "母亲", "老人", "病情"]
+      ],
+      answer: "是",
+      clueId: "archive-elder"
+    },
+    {
+      any: ["鬼", "闹鬼", "灵异", "鬼影", "超自然"],
+      negatedAnswer: "是",
+      answer: "否"
+    },
+    {
+      any: ["长期照顾", "照顾某个人", "某个人", "照顾", "行动不便"],
+      answer: "是",
+      clueId: "archive-elder"
+    },
+    {
+      any: ["第三个人", "三个人", "还有人", "藏着人", "屋里", "宅里", "脚步声"],
+      answer: "是",
+      clueId: "archive-third-person"
+    },
+    {
+      any: ["第三只碗", "第三套餐具", "碗", "餐具"],
+      answer: "是",
+      clueId: "archive-third-bowl"
+    },
+    {
+      any: ["药", "药渍", "药汤", "服药", "病情"],
+      answer: "是",
+      clueId: "archive-medicine"
+    },
+    {
+      any: ["扶手", "楼梯", "磨痕", "行动不便", "借力"],
+      answer: "是",
+      clueId: "archive-railing"
+    },
+    {
+      any: ["屋主", "主人", "母亲", "老人", "家人", "隐瞒", "撒谎"],
+      answer: "是",
+      clueId: "archive-elder"
+    }
+  ],
+  "dream-corridor": [
+    {
+      all: [["鬼", "鬼影", "灵异", "超自然", "另一个自己"]],
+      negatedAnswer: "是",
+      answer: "否",
+      clueId: "dream-reflection"
+    },
+    {
+      all: [
+        ["镜", "镜子", "镜面", "反射", "倒影", "视错觉", "错觉"],
+        ["关键", "重要", "布置", "看到", "人影"]
+      ],
+      answer: "是",
+      clueId: "dream-mirror"
+    },
+    {
+      all: [
+        ["灯", "纸灯", "灯笼", "少了一盏", "缺了一盏"],
+        ["关键", "重要", "拿走", "人为", "少掉"]
+      ],
+      answer: "是",
+      clueId: "dream-lantern"
+    },
+    {
+      all: [
+        ["灰", "灰痕", "地上", "痕迹"],
+        ["先行", "提前", "经过", "通过", "去过"]
+      ],
+      answer: "是",
+      clueId: "dream-dust"
+    },
+    {
+      all: [
+        ["人数", "人头", "通过的人", "经过人数", "只通过", "一个人"],
+        ["误导", "误以为", "错觉", "伪装", "抹掉", "隐藏"]
+      ],
+      answer: "是",
+      clueId: "dream-headcount"
+    },
+    {
+      all: [
+        ["同行者", "同伴", "那个人"],
+        ["提前", "布置", "拿走", "做过", "伪装"]
+      ],
+      answer: "是",
+      clueId: "dream-mirror"
+    },
+    {
+      any: ["鬼", "鬼影", "灵异", "超自然", "另一个自己"],
+      negatedAnswer: "是",
+      answer: "否",
+      clueId: "dream-reflection"
+    },
+    {
+      any: ["镜", "镜子", "镜面", "反射", "倒影", "视错觉", "错觉", "人影"],
+      answer: "是",
+      clueId: "dream-mirror"
+    },
+    {
+      any: ["灯", "纸灯", "灯笼", "少了一盏", "缺了一盏"],
+      answer: "是",
+      clueId: "dream-lantern"
+    },
+    {
+      any: ["灰", "灰痕", "地上", "痕迹", "先行", "提前经过"],
+      answer: "是",
+      clueId: "dream-dust"
+    },
+    {
+      any: ["人数", "人头", "误导", "误以为", "只通过", "一个人", "错觉", "伪装", "抹掉"],
+      answer: "是",
+      clueId: "dream-headcount"
+    },
+    {
+      any: ["同行者", "同伴", "布置", "拿走"],
+      answer: "是",
+      clueId: "dream-mirror"
+    }
+  ]
+};
+
+function includesAny(raw, terms) {
+  return terms.some((term) => raw.includes(normalize(term)));
+}
+
+function isNegated(raw) {
+  const neutralizedQuestionPattern = raw.replace(/是不是/g, "").replace(/是否/g, "");
+  return includesAny(neutralizedQuestionPattern, negationTerms);
+}
+
+function matchSemanticAnswer(question, scenario) {
+  const raw = normalize(question);
+  const rules = semanticAnswerRules[scenario.id] || [];
+  const matched = rules.find((rule) =>
+    rule.all
+      ? rule.all.every((terms) => includesAny(raw, terms))
+      : includesAny(raw, rule.any || [])
+  );
+
+  if (!matched) return null;
+
+  return {
+    answer: matched.negatedAnswer && isNegated(raw) ? matched.negatedAnswer : matched.answer,
+    clueId: matched.clueId
+  };
+}
+
 function findAnswer(question, scenario) {
   const raw = normalize(question);
+  const semanticMatched = matchSemanticAnswer(question, scenario);
+  if (semanticMatched) return semanticMatched;
+
   const matched = scenario.answers.find((item) =>
     item.match.every((word) => raw.includes(normalize(word)))
   );
@@ -85,6 +389,12 @@ function findAnswer(question, scenario) {
 function getClueCardById(scenario, clueId) {
   if (!clueId) return null;
   return scenario.clueCards.find((card) => card.id === clueId) || null;
+}
+
+function getTimelineClueTitle(clue) {
+  if (!clue) return "";
+  if (typeof clue === "string") return clue;
+  return clue.title || "";
 }
 
 function evaluateGuess(guess, scenario) {
@@ -471,20 +781,24 @@ function PlayScreen({
           </div>
 
           <div className="tw-log" ref={timelineRef}>
-            {game.timeline.map((entry) => (
-              <article
-                key={entry.id}
-                className={`tw-log-row is-${entry.type} ${
-                  entry.clue ? "has-clue" : ""
-                }`}
-              >
-                <div className="tw-log-speaker">{entry.speaker}</div>
-                <div className="tw-log-bubble">
-                  <p>{entry.text}</p>
-                  {entry.clue ? <span className="tw-clue-badge">{entry.clue}</span> : null}
-                </div>
-              </article>
-            ))}
+            {game.timeline.map((entry) => {
+              const clueTitle = getTimelineClueTitle(entry.clue);
+
+              return (
+                <article
+                  key={entry.id}
+                  className={`tw-log-row is-${entry.type} ${
+                    clueTitle ? "has-clue" : ""
+                  }`}
+                >
+                  <div className="tw-log-speaker">{entry.speaker}</div>
+                  <div className="tw-log-bubble">
+                    <p>{entry.text}</p>
+                    {clueTitle ? <span className="tw-clue-badge">{clueTitle}</span> : null}
+                  </div>
+                </article>
+              );
+            })}
           </div>
 
           <div className="tw-composer-card">
@@ -638,18 +952,22 @@ function ReviewScreen({
           </div>
 
           <div className="tw-review-list">
-            {game.timeline.map((entry, index) => (
-              <div key={entry.id} className="tw-review-row">
-                <div className="tw-review-index">{index + 1}</div>
-                <div className="tw-review-card">
-                  <strong>{entry.speaker}</strong>
-                  <p>{entry.text}</p>
+            {game.timeline.map((entry, index) => {
+              const clueTitle = getTimelineClueTitle(entry.clue);
+
+              return (
+                <div key={entry.id} className="tw-review-row">
+                  <div className="tw-review-index">{index + 1}</div>
+                  <div className="tw-review-card">
+                    <strong>{entry.speaker}</strong>
+                    <p>{entry.text}</p>
+                  </div>
+                  {clueTitle ? (
+                    <span className="tw-clue-badge is-inline">{clueTitle}</span>
+                  ) : null}
                 </div>
-                {entry.clue ? (
-                  <span className="tw-clue-badge is-inline">{entry.clue.title}</span>
-                ) : null}
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="tw-list-card">
