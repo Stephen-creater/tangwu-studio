@@ -97,7 +97,7 @@ export const seatProfiles = [
     id: "seat-3",
     humanName: "同行者乙",
     aiName: "景沉舟",
-    avatar: "/assets/characters/character-jing-chenzhou-v1.png"
+    avatar: "/assets/characters/character-jing-chenzhou-v3.png"
   },
   {
     id: "seat-4",
