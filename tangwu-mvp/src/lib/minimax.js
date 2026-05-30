@@ -1,5 +1,6 @@
 const MINIMAX_API_BASE_URL = "https://api.minimaxi.com/v1";
-const MINIMAX_MODEL = "MiniMax-M2.7";
+const MINIMAX_MODELS = ["MiniMax-M2.7-highspeed", "MiniMax-M2.7"];
+export const MINIMAX_RUNTIME_LABEL = "MiniMax-M2.7-highspeed 优先";
 const MINIMAX_API_KEY =
   "sk-cp-TekIaMAeLsNcA_np_SUNTAM_NvZ8mrLFL_fEnqEYhrrCSWVZ-zsYmJ4n_0dtOWkOPmt7ymr63zyw_LxGpbcuwbuE2ih2FNshrPUyh956MBUN64TrgA7k7mA";
 
@@ -66,7 +67,7 @@ function defaultNoteForOutcome(outcome) {
   return "桥守摇头不语。";
 }
 
-async function callMiniMax(prompt, maxTokens = 500) {
+async function requestMiniMax(model, prompt, maxTokens) {
   const response = await fetch(`${MINIMAX_API_BASE_URL}/chat/completions`, {
     method: "POST",
     headers: {
@@ -74,7 +75,7 @@ async function callMiniMax(prompt, maxTokens = 500) {
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      model: MINIMAX_MODEL,
+      model,
       max_tokens: maxTokens,
       temperature: 0.2,
       messages: [
@@ -94,17 +95,48 @@ async function callMiniMax(prompt, maxTokens = 500) {
 
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(
-      payload?.error?.message || payload?.detail || payload?.error || "MiniMax request failed."
-    );
+    return {
+      ok: false,
+      error:
+        payload?.error?.message || payload?.detail || payload?.error || "MiniMax request failed."
+    };
+  }
+
+  if (payload?.base_resp?.status_code && payload.base_resp.status_code !== 0) {
+    return {
+      ok: false,
+      error: payload?.base_resp?.status_msg || `MiniMax error ${payload.base_resp.status_code}`
+    };
   }
 
   const text = payload?.choices?.[0]?.message?.content;
   if (typeof text !== "string" || !text.trim()) {
-    throw new Error("MiniMax returned an empty text block.");
+    return {
+      ok: false,
+      error: "MiniMax returned an empty text block."
+    };
   }
 
-  return stripThinkTags(text);
+  return {
+    ok: true,
+    text: stripThinkTags(text),
+    model
+  };
+}
+
+async function callMiniMax(prompt, maxTokens = 500) {
+  const failures = [];
+
+  for (const model of MINIMAX_MODELS) {
+    const result = await requestMiniMax(model, prompt, maxTokens);
+    if (result.ok) {
+      return result.text;
+    }
+
+    failures.push(`${model}: ${result.error}`);
+  }
+
+  throw new Error(failures.join(" | "));
 }
 
 function buildRecentTimeline(game) {

@@ -8,7 +8,7 @@ import {
   seatProfiles,
   themes
 } from "./gameData";
-import { generateAiQuestion, judgeGuess } from "./lib/minimax";
+import { MINIMAX_RUNTIME_LABEL, generateAiQuestion, judgeGuess } from "./lib/minimax";
 
 const DEFAULT_SETUP = {
   humanCount: 4,
@@ -423,7 +423,7 @@ function createInitialRuntime() {
   return {
     aiPending: false,
     guessPending: false,
-    engineLabel: "MiniMax M2.7 已接入，等待首轮调用",
+    engineLabel: `${MINIMAX_RUNTIME_LABEL} 已接入，等待首轮调用`,
     engineError: ""
   };
 }
@@ -1233,7 +1233,7 @@ export default function App() {
           ...prev,
           aiPending: true,
           engineError: "",
-          engineLabel: "MiniMax M2.7 正在为 AI 席位生成问题"
+          engineLabel: `${MINIMAX_RUNTIME_LABEL} 正在为 AI 席位生成问题`
         }));
         resolvedQuestion = await generateAiQuestion(game, currentPlayer);
         if (!cancelled) {
@@ -1241,7 +1241,7 @@ export default function App() {
             ...prev,
             aiPending: false,
             engineError: "",
-            engineLabel: "MiniMax M2.7 已生成本轮 AI 提问"
+            engineLabel: `${MINIMAX_RUNTIME_LABEL} 已生成本轮 AI 提问`
           }));
         }
       } catch (error) {
@@ -1431,14 +1431,14 @@ export default function App() {
         ...prev,
         guessPending: true,
         engineError: "",
-        engineLabel: "MiniMax M2.7 正在裁定这次推理"
+        engineLabel: `${MINIMAX_RUNTIME_LABEL} 正在裁定这次推理`
       }));
       judgement = await judgeGuess(game, guessText);
       setRuntime((prev) => ({
         ...prev,
         guessPending: false,
         engineError: "",
-        engineLabel: "MiniMax M2.7 已完成本轮裁定"
+        engineLabel: `${MINIMAX_RUNTIME_LABEL} 已完成本轮裁定`
       }));
     } catch (error) {
       const fallbackOutcome = evaluateGuess(guessText, game.scenario);
