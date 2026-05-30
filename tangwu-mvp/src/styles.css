@@ -1492,27 +1492,27 @@ button:disabled {
 
 .tw-composer-card {
   display: grid;
-  gap: 10px;
-  padding: 12px 0 0;
+  gap: 8px;
+  padding: 10px 0 0;
 }
 
 .tw-composer-main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 180px;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) 168px;
+  gap: 10px;
 }
 
 .tw-composer-main textarea,
 .tw-guess-modal textarea {
   width: 100%;
-  min-height: 78px;
-  padding: 14px 16px;
-  border-radius: 18px;
+  min-height: 68px;
+  padding: 12px 14px;
+  border-radius: 16px;
   border: 1px solid rgba(141, 103, 58, 0.16);
   background: rgba(255, 252, 246, 0.84);
   color: var(--text-main);
-  font-size: 16px;
-  line-height: 1.65;
+  font-size: 15px;
+  line-height: 1.55;
   resize: none;
 }
 
@@ -1524,12 +1524,13 @@ button:disabled {
 }
 
 .tw-composer-submit {
-  min-height: 78px;
-  border-radius: 18px;
+  min-height: 68px;
+  padding: 0 14px;
+  border-radius: 16px;
   border: 1px solid rgba(31, 26, 22, 0.96);
   background: linear-gradient(180deg, rgba(49, 41, 34, 0.96), rgba(31, 26, 22, 0.98));
   color: #fff4e4;
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 700;
 }
 
@@ -1554,12 +1555,48 @@ button:disabled {
   line-height: 1.55;
 }
 
+.tw-composer-meta p.is-busy {
+  color: var(--accent-strong);
+}
+
+.tw-inline-wait {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tw-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 244, 228, 0.28);
+  border-top-color: rgba(255, 244, 228, 0.94);
+  border-radius: 999px;
+  animation: tw-spin 0.8s linear infinite;
+}
+
+.tw-spinner.is-small {
+  width: 13px;
+  height: 13px;
+  border-width: 2px;
+  border-color: rgba(141, 103, 58, 0.16);
+  border-top-color: rgba(141, 103, 58, 0.92);
+}
+
 .tw-link-action {
   border: 0;
   padding: 0;
   background: transparent;
   color: var(--accent-strong);
   font-size: 15px;
+}
+
+@keyframes tw-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .tw-guess-modal {

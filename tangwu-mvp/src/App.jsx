@@ -8,7 +8,7 @@ import {
   seatProfiles,
   themes
 } from "./gameData";
-import { MINIMAX_RUNTIME_LABEL, generateAiQuestion, judgeGuess } from "./lib/minimax";
+import { generateAiQuestion, judgeGuess } from "./lib/minimax";
 
 const DEFAULT_SETUP = {
   humanCount: 1,
@@ -423,9 +423,29 @@ function createInitialRuntime() {
   return {
     aiPending: false,
     guessPending: false,
-    engineLabel: `${MINIMAX_RUNTIME_LABEL} 已接入，等待首轮调用`,
+    engineLabel: "轮到你先向桥守发问。",
     engineError: ""
   };
+}
+
+function getAiThinkingLabel(playerName) {
+  return `${playerName} 正在整理线索，准备向桥守发问……`;
+}
+
+function getAiReadyLabel(playerName) {
+  return `${playerName} 已经想好问题，正准备接话。`;
+}
+
+function getAiFallbackLabel(playerName) {
+  return `${playerName} 暂时没接上思路，先按既定线索继续追问。`;
+}
+
+function getGuessPendingLabel() {
+  return "桥守正在斟酌你的推理，请稍候。";
+}
+
+function getGuessFallbackLabel() {
+  return "桥守一时未能给出裁定，先按本地规则继续推进。";
 }
 
 function createPreviewGame(mode) {
@@ -857,6 +877,19 @@ function PlayScreen({
   const stickToBottomRef = useRef(true);
   const isHumanTurn = currentPlayer?.type === "human";
   const visibleClues = game.discoveredClues.slice(-2);
+  const waitingPlayerName = currentPlayer?.name || "同行者";
+  const composerStatus = runtime.engineError
+    ? runtime.engineError
+    : runtime.aiPending
+      ? getAiThinkingLabel(waitingPlayerName)
+      : runtime.guessPending
+        ? getGuessPendingLabel()
+        : runtime.engineLabel;
+  const composerPlaceholder = isHumanTurn
+    ? `例如：${selectedTheme.starterQuestions[0]}`
+    : runtime.aiPending
+      ? `${waitingPlayerName} 正在组织问题……`
+      : `${waitingPlayerName} 即将接过话头，请稍候。`;
 
   const handleTimelineScroll = () => {
     const node = timelineRef.current;
@@ -958,13 +991,7 @@ function PlayScreen({
               <textarea
                 value={game.pendingQuestion}
                 onChange={(event) => onQuestionChange(event.target.value)}
-                placeholder={
-                  isHumanTurn
-                    ? `例如：${selectedTheme.starterQuestions[0]}`
-                    : runtime.aiPending
-                      ? "MiniMax 正在为 AI 席位生成问题……"
-                      : "当前不是人类席位，桥守正在等待 AI 行动。"
-                }
+                placeholder={composerPlaceholder}
                 disabled={!isHumanTurn || runtime.guessPending}
               />
               <button
@@ -972,14 +999,26 @@ function PlayScreen({
                 disabled={!isHumanTurn || runtime.guessPending || !game.pendingQuestion.trim()}
                 onClick={onAskQuestion}
               >
-                {runtime.aiPending ? "等待 AI..." : "提问"}
+                {runtime.aiPending ? (
+                  <span className="tw-inline-wait">
+                    <span className="tw-spinner" aria-hidden="true" />
+                    {`${waitingPlayerName} 思索中`}
+                  </span>
+                ) : (
+                  "向桥守发问"
+                )}
               </button>
             </div>
             <div className="tw-composer-meta">
-              <p>
-                {runtime.engineError
-                  ? `当前改用兜底逻辑：${runtime.engineError}`
-                  : runtime.engineLabel}
+              <p className={runtime.aiPending || runtime.guessPending ? "is-busy" : ""}>
+                {runtime.aiPending || runtime.guessPending ? (
+                  <span className="tw-inline-wait">
+                    <span className="tw-spinner is-small" aria-hidden="true" />
+                    {composerStatus}
+                  </span>
+                ) : (
+                  composerStatus
+                )}
               </p>
               <div className="tw-composer-actions">
                 <span>
@@ -1010,7 +1049,9 @@ function PlayScreen({
                 active={player.seat === game.activeSeat}
                 note={
                   player.seat === game.activeSeat
-                    ? "当前行动"
+                    ? player.type === "ai" && runtime.aiPending
+                      ? "正在思索"
+                      : "当前行动"
                     : player.type === "human"
                       ? "等待接力"
                       : "待命补位"
@@ -1223,25 +1264,26 @@ export default function App() {
     if (game.phase !== "play" || !currentPlayer || currentPlayer.type !== "ai") return undefined;
     let cancelled = false;
 
+    setRuntime((prev) => ({
+      ...prev,
+      aiPending: true,
+      engineError: "",
+      engineLabel: getAiThinkingLabel(currentPlayer.name)
+    }));
+
     const timer = window.setTimeout(async () => {
       const question =
         (() => getFallbackAiQuestion(currentPlayer, game.scenario))();
 
       let resolvedQuestion = question;
       try {
-        setRuntime((prev) => ({
-          ...prev,
-          aiPending: true,
-          engineError: "",
-          engineLabel: `${MINIMAX_RUNTIME_LABEL} 正在为 AI 席位生成问题`
-        }));
         resolvedQuestion = await generateAiQuestion(game, currentPlayer);
         if (!cancelled) {
           setRuntime((prev) => ({
             ...prev,
             aiPending: false,
             engineError: "",
-            engineLabel: `${MINIMAX_RUNTIME_LABEL} 已生成本轮 AI 提问`
+            engineLabel: getAiReadyLabel(currentPlayer.name)
           }));
         }
       } catch (error) {
@@ -1249,7 +1291,7 @@ export default function App() {
           setRuntime((prev) => ({
             ...prev,
             aiPending: false,
-            engineLabel: "MiniMax 暂时不可用，本轮改用本地兜底逻辑",
+            engineLabel: getAiFallbackLabel(currentPlayer.name),
             engineError: error instanceof Error ? error.message : String(error)
           }));
         }
@@ -1431,14 +1473,14 @@ export default function App() {
         ...prev,
         guessPending: true,
         engineError: "",
-        engineLabel: `${MINIMAX_RUNTIME_LABEL} 正在裁定这次推理`
+        engineLabel: getGuessPendingLabel()
       }));
       judgement = await judgeGuess(game, guessText);
       setRuntime((prev) => ({
         ...prev,
         guessPending: false,
         engineError: "",
-        engineLabel: `${MINIMAX_RUNTIME_LABEL} 已完成本轮裁定`
+        engineLabel: "桥守已经给出裁定。"
       }));
     } catch (error) {
       const fallbackOutcome = evaluateGuess(guessText, game.scenario);
@@ -1454,7 +1496,7 @@ export default function App() {
       setRuntime((prev) => ({
         ...prev,
         guessPending: false,
-        engineLabel: "MiniMax 暂时不可用，本轮改用本地裁定",
+        engineLabel: getGuessFallbackLabel(),
         engineError: error instanceof Error ? error.message : String(error)
       }));
     }
@@ -1554,7 +1596,7 @@ export default function App() {
                 }
                 placeholder={
                   runtime.guessPending
-                    ? "MiniMax 正在裁定这次推理……"
+                    ? "桥守正在斟酌你的推理……"
                     : "至少交代人物关系、关键物件、真正时间线和伪装方式。"
                 }
                 disabled={runtime.guessPending}
