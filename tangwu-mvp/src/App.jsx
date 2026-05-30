@@ -11,9 +11,9 @@ import {
 import { MINIMAX_RUNTIME_LABEL, generateAiQuestion, judgeGuess } from "./lib/minimax";
 
 const DEFAULT_SETUP = {
-  humanCount: 4,
+  humanCount: 1,
   themeId: "bridge",
-  difficultyId: "normal"
+  difficultyId: "easy"
 };
 
 function buildPlayers(humanCount) {
