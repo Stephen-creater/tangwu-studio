@@ -582,8 +582,8 @@ function TopBar({
   result,
   onOpenStory,
   onOpenRules,
-  onOpenSettings,
-  onOpenReview
+  onOpenReview,
+  onBackToSetup
 }) {
   return (
     <header className="tw-header">
@@ -610,14 +610,16 @@ function TopBar({
             本局回顾
           </button>
         ) : null}
+        {phase === "play" ? (
+          <button className="tw-toolbar-button" onClick={onBackToSetup}>
+            回到开局台
+          </button>
+        ) : null}
         <button className="tw-toolbar-button" onClick={onOpenStory}>
           故事档案
         </button>
         <button className="tw-toolbar-button" onClick={onOpenRules}>
           玩法规则
-        </button>
-        <button className="tw-toolbar-button" onClick={onOpenSettings}>
-          设置
         </button>
       </div>
     </header>
@@ -676,8 +678,6 @@ function SetupScreen({
   onDifficultyChange,
   onOpenStory,
   onOpenRules,
-  onOpenSettings,
-  onReset,
   onStart
 }) {
   const seats = useMemo(() => buildPlayers(game.humanCount), [game.humanCount]);
@@ -689,7 +689,6 @@ function SetupScreen({
         theme={selectedTheme}
         onOpenStory={onOpenStory}
         onOpenRules={onOpenRules}
-        onOpenSettings={onOpenSettings}
       />
 
       <section className="tw-layout tw-setup-layout">
@@ -845,7 +844,6 @@ function PlayScreen({
   selectedDifficulty,
   onOpenStory,
   onOpenRules,
-  onOpenSettings,
   onOpenGuess,
   onBackToSetup,
   onQuestionChange,
@@ -874,7 +872,7 @@ function PlayScreen({
         result={game.result}
         onOpenStory={onOpenStory}
         onOpenRules={onOpenRules}
-        onOpenSettings={onOpenSettings}
+        onBackToSetup={onBackToSetup}
       />
 
       <section className="tw-layout tw-play-layout">
@@ -1046,7 +1044,6 @@ function ReviewScreen({
   selectedTheme,
   onOpenStory,
   onOpenRules,
-  onOpenSettings,
   onOpenReview,
   onRestart
 }) {
@@ -1072,7 +1069,6 @@ function ReviewScreen({
         result={game.result}
         onOpenStory={onOpenStory}
         onOpenRules={onOpenRules}
-        onOpenSettings={onOpenSettings}
         onOpenReview={onOpenReview}
       />
 
@@ -1530,18 +1526,6 @@ export default function App() {
     setGame((prev) => createInitialGame(prev.humanCount, prev.themeId, prev.difficultyId));
   };
 
-  const restoreDefaults = () => {
-    setActiveOverlay(null);
-    setRuntime(createInitialRuntime());
-    setGame(
-      createInitialGame(
-        DEFAULT_SETUP.humanCount,
-        DEFAULT_SETUP.themeId,
-        DEFAULT_SETUP.difficultyId
-      )
-    );
-  };
-
   const modalConfig = (() => {
     if (activeOverlay === "guess") {
       return {
@@ -1655,57 +1639,6 @@ export default function App() {
       };
     }
 
-    if (activeOverlay === "settings") {
-      return {
-        eyebrow: "设置",
-        title: "当前开局参数",
-        subtitle: "当前阶段先把桥守这一碗汤打磨完整，不开放多案切换。",
-        children: (
-          <>
-            <div className="tw-modal-grid">
-              <div className="tw-modal-card">
-                <span>人类席位</span>
-                <strong>
-                  {game.humanCount}/{TOTAL_SEATS}
-                </strong>
-                <p>剩余席位由 AI 自动补位。</p>
-              </div>
-              <div className="tw-modal-card">
-                <span>当前案件</span>
-                <strong>{selectedTheme.title}</strong>
-                <p>{selectedTheme.description}</p>
-              </div>
-              <div className="tw-modal-card">
-                <span>难度</span>
-                <strong>{selectedDifficulty.title}</strong>
-                <p>
-                  {game.questionLimit} 次提问 / {game.guessLimit} 次提交
-                </p>
-              </div>
-              <div className="tw-modal-card">
-                <span>当前阶段</span>
-                <strong>{getPhaseLabel(game.phase)}</strong>
-                <p>{game.phase === "setup" ? "尚未开局" : "本局已经开始推进"}</p>
-              </div>
-            </div>
-          </>
-        ),
-        footer: (
-          <>
-            <button
-              className="tw-secondary-cta"
-              onClick={game.phase === "setup" ? restoreDefaults : resetToSetup}
-            >
-              {game.phase === "setup" ? "恢复默认配置" : "回到开局台"}
-            </button>
-            <button className="tw-secondary-cta is-dark" onClick={() => setActiveOverlay(null)}>
-              关闭
-            </button>
-          </>
-        )
-      };
-    }
-
     if (activeOverlay === "review") {
       const champion = getTopPerformer(game.players);
       return {
@@ -1783,8 +1716,6 @@ export default function App() {
           }
           onOpenStory={() => setActiveOverlay("story")}
           onOpenRules={() => setActiveOverlay("rules")}
-          onOpenSettings={() => setActiveOverlay("settings")}
-          onReset={restoreDefaults}
           onStart={handleStart}
         />
       ) : null}
@@ -1798,7 +1729,6 @@ export default function App() {
           selectedDifficulty={selectedDifficulty}
           onOpenStory={() => setActiveOverlay("story")}
           onOpenRules={() => setActiveOverlay("rules")}
-          onOpenSettings={() => setActiveOverlay("settings")}
           onOpenGuess={() => setActiveOverlay("guess")}
           onBackToSetup={resetToSetup}
           onQuestionChange={handleQuestionChange}
@@ -1813,7 +1743,6 @@ export default function App() {
           selectedTheme={selectedTheme}
           onOpenStory={() => setActiveOverlay("story")}
           onOpenRules={() => setActiveOverlay("rules")}
-          onOpenSettings={() => setActiveOverlay("settings")}
           onOpenReview={() => setActiveOverlay("review")}
           onRestart={resetToSetup}
         />
