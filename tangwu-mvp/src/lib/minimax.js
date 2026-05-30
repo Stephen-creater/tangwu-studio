@@ -1,3 +1,12 @@
+const MINIMAX_API_BASE_URL = "https://api.minimaxi.com/v1";
+const MINIMAX_MODEL = "MiniMax-M2.7";
+const MINIMAX_API_KEY =
+  "sk-cp-TekIaMAeLsNcA_np_SUNTAM_NvZ8mrLFL_fEnqEYhrrCSWVZ-zsYmJ4n_0dtOWkOPmt7ymr63zyw_LxGpbcuwbuE2ih2FNshrPUyh956MBUN64TrgA7k7mA";
+
+function stripThinkTags(text) {
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+}
+
 function pickJsonBlock(text) {
   const fencedMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fencedMatch?.[1]) {
@@ -58,27 +67,44 @@ function defaultNoteForOutcome(outcome) {
 }
 
 async function callMiniMax(prompt, maxTokens = 500) {
-  const response = await fetch("/api/minimax", {
+  const response = await fetch(`${MINIMAX_API_BASE_URL}/chat/completions`, {
     method: "POST",
     headers: {
+      Authorization: `Bearer ${MINIMAX_API_KEY}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
-      prompt,
-      maxTokens
+      model: MINIMAX_MODEL,
+      max_tokens: maxTokens,
+      temperature: 0.2,
+      messages: [
+        {
+          role: "system",
+          name: "MiniMax AI",
+          content: "You are a helpful assistant."
+        },
+        {
+          role: "user",
+          name: "用户",
+          content: prompt
+        }
+      ]
     })
   });
 
   const payload = await response.json();
   if (!response.ok) {
-    throw new Error(payload?.detail || payload?.error || "MiniMax request failed.");
+    throw new Error(
+      payload?.error?.message || payload?.detail || payload?.error || "MiniMax request failed."
+    );
   }
 
-  if (!payload?.text) {
+  const text = payload?.choices?.[0]?.message?.content;
+  if (typeof text !== "string" || !text.trim()) {
     throw new Error("MiniMax returned an empty text block.");
   }
 
-  return payload.text;
+  return stripThinkTags(text);
 }
 
 function buildRecentTimeline(game) {
@@ -97,7 +123,9 @@ export async function generateAiQuestion(game, player) {
     `故事标题：${game.scenario.title}`,
     `题面：${game.scenario.opening}`,
     `已发现线索：${
-      game.discoveredClues.length > 0 ? game.discoveredClues.join("；") : "暂无"
+      game.discoveredClues.length > 0
+        ? game.discoveredClues.map((clue) => clue.title).join("；")
+        : "暂无"
     }`,
     `当前玩家：${player.seat}号 ${player.name}`,
     `最近对话：\n${buildRecentTimeline(game)}`,
