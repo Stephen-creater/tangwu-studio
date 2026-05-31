@@ -67,6 +67,19 @@ function defaultNoteForOutcome(outcome) {
   return "桥守摇头不语。";
 }
 
+function normalizeKeeperAnswer(text) {
+  const raw = text.trim().replace(/[。！!~\s]/g, "");
+  if (raw === "是") return "是";
+  if (raw === "否") return "否";
+  if (raw === "无关") return "无关";
+  if (/^是[吗呢呀啊]?$/.test(raw)) return "是";
+  if (/^否[吗呢呀啊]?$/.test(raw)) return "否";
+  if (raw.includes("无关")) return "无关";
+  if (raw.startsWith("是")) return "是";
+  if (raw.startsWith("否")) return "否";
+  return "";
+}
+
 async function requestMiniMax(model, prompt, maxTokens) {
   const response = await fetch(`${MINIMAX_API_BASE_URL}/chat/completions`, {
     method: "POST",
@@ -174,6 +187,52 @@ export async function generateAiQuestion(game, player) {
   }
 
   return question.replace(/^["'“”]+|["'“”]+$/g, "");
+}
+
+export async function askKeeperAnswer(game, question) {
+  const clueChoices = game.scenario.clueCards
+    .map((clue) => `${clue.id}: ${clue.title}`)
+    .join("\n");
+
+  const prompt = [
+    "你是海龟汤游戏《汤屋》中的桥守。",
+    "你知道完整真相，但面对玩家时只能回答“是”“否”或“无关”。",
+    "如果这个问题直接触及一条关键线索，请从给定 clueId 中选最贴切的一条；如果没有，就返回 null。",
+    "不要解释，不要补充剧情，不要输出多余文字。",
+    '只输出 JSON，格式为 {"answer":"是|否|无关","clueId":"给定 clueId 或 null"}。',
+    "",
+    `故事标题：${game.scenario.title}`,
+    `当前汤面：${game.scenario.opening}`,
+    `完整真相：${game.scenario.truth}`,
+    `已解锁线索：${
+      game.discoveredClues.length > 0
+        ? game.discoveredClues.map((clue) => `${clue.id}: ${clue.title}`).join("；")
+        : "暂无"
+    }`,
+    `可选关键线索：\n${clueChoices}`,
+    `最近对话：\n${buildRecentTimeline(game)}`,
+    `玩家问题：${question}`
+  ].join("\n");
+
+  const text = await callMiniMax(prompt, 900);
+  const parsed = parseJsonObject(text);
+  const answer =
+    typeof parsed?.answer === "string"
+      ? normalizeKeeperAnswer(parsed.answer)
+      : normalizeKeeperAnswer(text);
+
+  if (!answer) {
+    throw new Error("MiniMax did not return a valid keeper answer.");
+  }
+
+  const validClueIds = new Set(game.scenario.clueCards.map((clue) => clue.id));
+  const clueId =
+    typeof parsed?.clueId === "string" && validClueIds.has(parsed.clueId) ? parsed.clueId : null;
+
+  return {
+    answer,
+    clueId
+  };
 }
 
 export async function judgeGuess(game, guess) {

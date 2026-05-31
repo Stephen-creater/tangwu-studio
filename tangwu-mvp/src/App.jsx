@@ -8,7 +8,7 @@ import {
   seatProfiles,
   themes
 } from "./gameData";
-import { generateAiQuestion, judgeGuess } from "./lib/minimax";
+import { askKeeperAnswer, generateAiQuestion, judgeGuess } from "./lib/minimax";
 
 const DEFAULT_SETUP = {
   humanCount: 1,
@@ -447,6 +447,7 @@ function getFallbackAiQuestion(player, scenario) {
 function createInitialRuntime() {
   return {
     aiPending: false,
+    keeperPending: false,
     guessPending: false,
     engineLabel: "轮到你先向桥守发问。",
     engineError: ""
@@ -463,6 +464,18 @@ function getAiReadyLabel(playerName) {
 
 function getAiFallbackLabel(playerName) {
   return `${playerName} 暂时没接上思路，先按既定线索继续追问。`;
+}
+
+function getKeeperThinkingLabel() {
+  return "桥守正在斟酌这句问话。";
+}
+
+function getKeeperReadyLabel() {
+  return "桥守已经给出回答。";
+}
+
+function getKeeperFallbackLabel() {
+  return "桥守一时没有接上话，只能先按旧规矩作答。";
 }
 
 function getGuessPendingLabel() {
@@ -945,14 +958,18 @@ function PlayScreen({
   const waitingPlayerName = currentPlayer?.name || "同行者";
   const composerStatus = runtime.engineError
     ? runtime.engineError
-    : runtime.aiPending
+    : runtime.keeperPending
+      ? getKeeperThinkingLabel()
+      : runtime.aiPending
       ? getAiThinkingLabel(waitingPlayerName)
       : runtime.guessPending
         ? getGuessPendingLabel()
         : runtime.engineLabel;
   const composerPlaceholder = isHumanTurn
     ? `例如：${selectedTheme.starterQuestions[0]}`
-    : runtime.aiPending
+    : runtime.keeperPending
+      ? "桥守正在给出回答……"
+      : runtime.aiPending
       ? `${waitingPlayerName} 正在组织问题……`
       : `${waitingPlayerName} 即将接过话头，请稍候。`;
 
@@ -1049,14 +1066,24 @@ function PlayScreen({
                 value={game.pendingQuestion}
                 onChange={(event) => onQuestionChange(event.target.value)}
                 placeholder={composerPlaceholder}
-                disabled={!isHumanTurn || runtime.guessPending}
+                disabled={!isHumanTurn || runtime.guessPending || runtime.keeperPending}
               />
               <button
                 className="tw-composer-submit"
-                disabled={!isHumanTurn || runtime.guessPending || !game.pendingQuestion.trim()}
+                disabled={
+                  !isHumanTurn ||
+                  runtime.guessPending ||
+                  runtime.keeperPending ||
+                  !game.pendingQuestion.trim()
+                }
                 onClick={onAskQuestion}
               >
-                {runtime.aiPending ? (
+                {runtime.keeperPending ? (
+                  <span className="tw-inline-wait">
+                    <span className="tw-spinner" aria-hidden="true" />
+                    桥守应声中
+                  </span>
+                ) : runtime.aiPending ? (
                   <span className="tw-inline-wait">
                     <span className="tw-spinner" aria-hidden="true" />
                     {`${waitingPlayerName} 思索中`}
@@ -1370,6 +1397,7 @@ export default function App() {
     setRuntime((prev) => ({
       ...prev,
       aiPending: true,
+      keeperPending: false,
       engineError: "",
       engineLabel: getAiThinkingLabel(currentPlayer.name)
     }));
@@ -1407,8 +1435,44 @@ export default function App() {
         const active = prev.players.find((player) => player.seat === prev.activeSeat);
         if (!active || active.type !== "ai") return prev;
 
-        const result = findAnswer(resolvedQuestion, prev.scenario);
-        const clueCard = getClueCardById(prev.scenario, result.clueId);
+        return prev;
+      });
+
+      if (cancelled) return;
+
+      let keeperResult;
+      try {
+        keeperResult = await askKeeperAnswer(game, resolvedQuestion);
+        if (!cancelled) {
+          setRuntime((prev) => ({
+            ...prev,
+            aiPending: false,
+            keeperPending: false,
+            engineError: "",
+            engineLabel: getKeeperReadyLabel()
+          }));
+        }
+      } catch (error) {
+        keeperResult = findAnswer(resolvedQuestion, game.scenario);
+        if (!cancelled) {
+          setRuntime((prev) => ({
+            ...prev,
+            aiPending: false,
+            keeperPending: false,
+            engineError: "",
+            engineLabel: getKeeperFallbackLabel()
+          }));
+        }
+      }
+
+      if (cancelled) return;
+      setGame((prev) => {
+        if (prev.phase !== "play") return prev;
+
+        const active = prev.players.find((player) => player.seat === prev.activeSeat);
+        if (!active || active.type !== "ai") return prev;
+
+        const clueCard = getClueCardById(prev.scenario, keeperResult.clueId);
         const clues =
           clueCard && !prev.discoveredClues.some((card) => card.id === clueCard.id)
             ? [...prev.discoveredClues, clueCard]
@@ -1447,7 +1511,7 @@ export default function App() {
               type: "keeper",
               speaker: "桥守",
               seatId: "keeper",
-              text: result.answer,
+              text: keeperResult.answer,
               clue: clueCard || null
             }
           ],
@@ -1493,18 +1557,46 @@ export default function App() {
     setGame((prev) => ({ ...prev, pendingGuess: value }));
   };
 
-  const handleAskQuestion = () => {
+  const handleAskQuestion = async () => {
     if (
       !currentPlayer ||
       currentPlayer.type !== "human" ||
       runtime.guessPending ||
+      runtime.keeperPending ||
       !game.pendingQuestion.trim()
     ) {
       return;
     }
 
-    const result = findAnswer(game.pendingQuestion, game.scenario);
-    const clueCard = getClueCardById(game.scenario, result.clueId);
+    const questionText = game.pendingQuestion.trim();
+
+    setRuntime((prev) => ({
+      ...prev,
+      keeperPending: true,
+      engineError: "",
+      engineLabel: getKeeperThinkingLabel()
+    }));
+
+    let keeperResult;
+    try {
+      keeperResult = await askKeeperAnswer(game, questionText);
+      setRuntime((prev) => ({
+        ...prev,
+        keeperPending: false,
+        engineError: "",
+        engineLabel: getKeeperReadyLabel()
+      }));
+    } catch {
+      keeperResult = findAnswer(questionText, game.scenario);
+      setRuntime((prev) => ({
+        ...prev,
+        keeperPending: false,
+        engineError: "",
+        engineLabel: getKeeperFallbackLabel()
+      }));
+    }
+
+    const clueCard = getClueCardById(game.scenario, keeperResult.clueId);
     const clues =
       clueCard && !game.discoveredClues.some((card) => card.id === clueCard.id)
         ? [...game.discoveredClues, clueCard]
@@ -1535,7 +1627,7 @@ export default function App() {
           type: "human",
           speaker: currentPlayer.name,
           seatId: currentPlayer.id,
-          text: prev.pendingQuestion,
+          text: questionText,
           clue: null
         },
         {
@@ -1543,7 +1635,7 @@ export default function App() {
           type: "keeper",
           speaker: "桥守",
           seatId: "keeper",
-          text: result.answer,
+          text: keeperResult.answer,
           clue: clueCard || null
         }
       ],
