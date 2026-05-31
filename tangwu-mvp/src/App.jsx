@@ -1178,7 +1178,8 @@ function ReviewScreen({
   selectedTheme,
   onOpenStory,
   onOpenRules,
-  onRestart
+  onRestart,
+  onBackToSetup
 }) {
   const progress = Math.round(
     (game.discoveredClues.length / game.scenario.clueCards.length) * 100
@@ -1208,25 +1209,27 @@ function ReviewScreen({
 
       <section className="tw-layout tw-review-layout">
         <aside className="tw-panel tw-story-panel">
-          <div className={`tw-result-banner is-${game.result?.outcome || "failed"}`}>
-            <span>{game.result?.outcome === "success" ? "通关结果" : "结局"}</span>
-            <strong>{game.result?.title || "本局结束"}</strong>
-            <p>{reasonCopy}</p>
-          </div>
+          <div className="tw-review-column-scroll">
+            <div className={`tw-result-banner is-${game.result?.outcome || "failed"}`}>
+              <span>{game.result?.outcome === "success" ? "通关结果" : "结局"}</span>
+              <strong>{game.result?.title || "本局结束"}</strong>
+              <p>{reasonCopy}</p>
+            </div>
 
-          <div className="tw-media-frame" data-tone={selectedTheme.tone}>
-            <img src={selectedTheme.image} alt={game.scenario.title} />
-            <div className="tw-media-label">{game.scenario.chapter}</div>
-          </div>
+            <div className="tw-media-frame" data-tone={selectedTheme.tone}>
+              <img src={selectedTheme.image} alt={game.scenario.title} />
+              <div className="tw-media-label">{game.scenario.chapter}</div>
+            </div>
 
-          <div className="tw-list-card">
-            <h3>汤面回看</h3>
-            <p>{game.scenario.opening}</p>
-          </div>
+            <div className="tw-list-card">
+              <h3>汤面回看</h3>
+              <p>{game.scenario.opening}</p>
+            </div>
 
-          <div className="tw-list-card">
-            <h3>这局的误区</h3>
-            <p>{game.scenario.summary}</p>
+            <div className="tw-list-card">
+              <h3>这局的误区</h3>
+              <p>{game.scenario.summary}</p>
+            </div>
           </div>
         </aside>
 
@@ -1239,105 +1242,112 @@ function ReviewScreen({
             </div>
           </div>
 
-          <div className="tw-list-card tw-review-truth">
-            <div className="tw-block-head">
-              <h3>完整真相</h3>
-              <span>桥守已摊牌</span>
+          <div className="tw-review-column-scroll">
+            <div className="tw-list-card tw-review-truth">
+              <div className="tw-block-head">
+                <h3>完整真相</h3>
+                <span>桥守已摊牌</span>
+              </div>
+              <p>{game.scenario.truth}</p>
             </div>
-            <p>{game.scenario.truth}</p>
-          </div>
 
-          <div className="tw-list-card">
-            <div className="tw-block-head">
-              <h3>关键线索</h3>
-              <span>
-                {game.discoveredClues.length}/{game.scenario.clueCards.length}
-              </span>
-            </div>
-            <div className="tw-review-clue-grid">
-              {game.scenario.clueCards.map((clue) => (
-                <div
-                  key={clue.id}
-                  className={`tw-review-clue-item ${
-                    foundClueIds.has(clue.id) ? "is-found" : "is-missing"
-                  }`}
-                >
-                  <strong>{clue.title}</strong>
-                  <span>{foundClueIds.has(clue.id) ? "已解锁" : "未触达"}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="tw-list-card">
-            <div className="tw-block-head">
-              <h3>时间线回放</h3>
-              <span>本局摘要</span>
-            </div>
-            <div className="tw-review-list">
-              {reviewEntries.map((entry, index) => {
-                const clueTitle = getTimelineClueTitle(entry.clue);
-
-                return (
-                  <div key={entry.id} className="tw-review-row">
-                    <div className="tw-review-index">{index + 1}</div>
-                    <div className="tw-review-card">
-                      <strong>{entry.speaker}</strong>
-                      <p>{entry.text}</p>
-                    </div>
-                    {clueTitle ? (
-                      <span className="tw-clue-badge is-inline">{clueTitle}</span>
-                    ) : null}
+            <div className="tw-list-card">
+              <div className="tw-block-head">
+                <h3>关键线索</h3>
+                <span>
+                  {game.discoveredClues.length}/{game.scenario.clueCards.length}
+                </span>
+              </div>
+              <div className="tw-review-clue-grid">
+                {game.scenario.clueCards.map((clue) => (
+                  <div
+                    key={clue.id}
+                    className={`tw-review-clue-item ${
+                      foundClueIds.has(clue.id) ? "is-found" : "is-missing"
+                    }`}
+                  >
+                    <strong>{clue.title}</strong>
+                    <span>{foundClueIds.has(clue.id) ? "已解锁" : "未触达"}</span>
                   </div>
-                );
-              })}
+                ))}
+              </div>
+            </div>
+
+            <div className="tw-list-card">
+              <div className="tw-block-head">
+                <h3>时间线回放</h3>
+                <span>本局摘要</span>
+              </div>
+              <div className="tw-review-list">
+                {reviewEntries.map((entry, index) => {
+                  const clueTitle = getTimelineClueTitle(entry.clue);
+
+                  return (
+                    <div key={entry.id} className="tw-review-row">
+                      <div className="tw-review-index">{index + 1}</div>
+                      <div className="tw-review-card">
+                        <strong>{entry.speaker}</strong>
+                        <p>{entry.text}</p>
+                      </div>
+                      {clueTitle ? (
+                        <span className="tw-clue-badge is-inline">{clueTitle}</span>
+                      ) : null}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </main>
 
         <aside className="tw-panel tw-side-panel">
-          <div className="tw-stat-card">
-            <div className="tw-block-head">
-              <h3>完成度</h3>
-              <span>{progress}%</span>
-            </div>
-            <div className="tw-review-stamp-wrap">
-              <img
-                className="tw-review-stamp"
-                src={
-                  game.result?.outcome === "success"
-                    ? "/assets/emblems/emblem-settlement-stamp-v1.png"
-                    : "/assets/emblems/emblem-review-seal-v1.png"
-                }
-                alt=""
-              />
-              <div className="tw-review-stamp-value">{progress}%</div>
-            </div>
-            <div className="tw-inline-stats">
-              <div>
-                <span>已提问</span>
-                <strong>{game.totalQuestions}</strong>
+          <div className="tw-review-column-scroll">
+            <div className="tw-stat-card">
+              <div className="tw-block-head">
+                <h3>完成度</h3>
+                <span>{progress}%</span>
               </div>
-              <div>
-                <span>已提交</span>
-                <strong>{game.guessesUsed}</strong>
+              <div className="tw-review-stamp-wrap">
+                <img
+                  className="tw-review-stamp"
+                  src={
+                    game.result?.outcome === "success"
+                      ? "/assets/emblems/emblem-settlement-stamp-v1.png"
+                      : "/assets/emblems/emblem-review-seal-v1.png"
+                  }
+                  alt=""
+                />
+                <div className="tw-review-stamp-value">{progress}%</div>
               </div>
-              <div>
-                <span>最佳席位</span>
-                <strong>{champion?.name || "—"}</strong>
+              <div className="tw-inline-stats">
+                <div>
+                  <span>已提问</span>
+                  <strong>{game.totalQuestions}</strong>
+                </div>
+                <div>
+                  <span>已提交</span>
+                  <strong>{game.guessesUsed}</strong>
+                </div>
+                <div>
+                  <span>最佳席位</span>
+                  <strong>{champion?.name || "—"}</strong>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="tw-performance-stack">
-            {game.players.map((player) => (
-              <PerformanceRow key={player.id} player={player} />
-            ))}
+            <div className="tw-performance-stack">
+              {game.players.map((player) => (
+                <PerformanceRow key={player.id} player={player} />
+              ))}
+            </div>
           </div>
 
           <div className="tw-review-actions">
             <button className="tw-primary-cta" onClick={onRestart}>
               再来一碗
+            </button>
+            <button className="tw-secondary-cta" onClick={onBackToSetup}>
+              返回开局台
             </button>
             <button className="tw-secondary-cta" onClick={onOpenStory}>
               查看故事档案
@@ -1971,6 +1981,7 @@ export default function App() {
           onOpenStory={() => setActiveOverlay("story")}
           onOpenRules={() => setActiveOverlay("rules")}
           onRestart={resetToSetup}
+          onBackToSetup={resetToSetup}
         />
       ) : null}
 

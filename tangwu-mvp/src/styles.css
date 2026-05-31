@@ -352,6 +352,16 @@ button:disabled {
   overflow: hidden;
 }
 
+.tw-review-layout .tw-story-panel,
+.tw-review-layout .tw-center-panel,
+.tw-review-layout .tw-side-panel {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.tw-review-layout .tw-center-panel {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
 .tw-play-layout .tw-story-panel .tw-media-frame,
 .tw-review-layout .tw-story-panel .tw-media-frame {
   min-height: 180px;
@@ -1723,6 +1733,16 @@ button:disabled {
   background: linear-gradient(180deg, rgba(86, 74, 60, 0.9), rgba(58, 49, 41, 0.94));
 }
 
+.tw-review-column-scroll {
+  min-height: 0;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
 .tw-review-truth p {
   line-height: 1.78;
 }
@@ -1765,6 +1785,9 @@ button:disabled {
 .tw-review-actions {
   display: grid;
   gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(141, 103, 58, 0.14);
+  background: linear-gradient(180deg, rgba(248, 243, 233, 0), rgba(248, 243, 233, 0.96) 22%);
 }
 
 .tw-review-list {
