@@ -1803,6 +1803,23 @@ button:disabled {
   align-items: start;
 }
 
+.tw-review-row.is-human .tw-review-card {
+  background: rgba(245, 236, 225, 0.9);
+}
+
+.tw-review-row.is-ai .tw-review-card {
+  background: rgba(247, 241, 232, 0.88);
+}
+
+.tw-review-row.is-keeper .tw-review-card {
+  background: linear-gradient(180deg, rgba(47, 37, 28, 0.94), rgba(34, 27, 22, 0.96));
+}
+
+.tw-review-row.is-keeper .tw-review-card strong,
+.tw-review-row.is-keeper .tw-review-card p {
+  color: rgba(255, 248, 236, 0.9);
+}
+
 .tw-review-index {
   display: grid;
   place-items: center;

@@ -1187,15 +1187,7 @@ function ReviewScreen({
   const champion = getTopPerformer(game.players);
   const reasonCopy = getReviewReasonCopy(game.result);
   const foundClueIds = new Set(game.discoveredClues.map((clue) => clue.id));
-  const filteredReviewEntries = game.timeline.filter((entry, index) => {
-    if (index === 0) return true;
-    if (entry.type === "human") return true;
-    return Boolean(entry.clue);
-  });
-  const reviewEntries =
-    filteredReviewEntries.length <= 3
-      ? filteredReviewEntries
-      : [filteredReviewEntries[0], ...filteredReviewEntries.slice(-2)];
+  const reviewEntries = game.timeline;
 
   return (
     <div className="tw-page-shell">
@@ -1276,25 +1268,18 @@ function ReviewScreen({
             <div className="tw-list-card">
               <div className="tw-block-head">
                 <h3>时间线回放</h3>
-                <span>本局摘要</span>
+                <span>完整上下文</span>
               </div>
               <div className="tw-review-list">
-                {reviewEntries.map((entry, index) => {
-                  const clueTitle = getTimelineClueTitle(entry.clue);
-
-                  return (
-                    <div key={entry.id} className="tw-review-row">
-                      <div className="tw-review-index">{index + 1}</div>
-                      <div className="tw-review-card">
-                        <strong>{entry.speaker}</strong>
-                        <p>{entry.text}</p>
-                      </div>
-                      {clueTitle ? (
-                        <span className="tw-clue-badge is-inline">{clueTitle}</span>
-                      ) : null}
+                {reviewEntries.map((entry, index) => (
+                  <div key={entry.id} className={`tw-review-row is-${entry.type}`}>
+                    <div className="tw-review-index">{index + 1}</div>
+                    <div className="tw-review-card">
+                      <strong>{entry.speaker}</strong>
+                      <p>{entry.text}</p>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
