@@ -932,8 +932,10 @@ button:disabled {
   max-height: 220px;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 4px;
+  padding-right: 6px;
   align-content: start;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(141, 103, 58, 0.52) rgba(141, 103, 58, 0.08);
 }
 
 .tw-discovered-clues.is-compact .tw-discovered-card {
@@ -945,6 +947,20 @@ button:disabled {
 .tw-discovered-clues.is-compact .tw-discovered-card strong {
   font-size: 15px;
   line-height: 1.45;
+}
+
+.tw-discovered-clues.is-compact::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tw-discovered-clues.is-compact::-webkit-scrollbar-thumb {
+  background: rgba(141, 103, 58, 0.52);
+  border-radius: 999px;
+}
+
+.tw-discovered-clues.is-compact::-webkit-scrollbar-track {
+  background: rgba(141, 103, 58, 0.08);
+  border-radius: 999px;
 }
 
 .tw-list-card li {
