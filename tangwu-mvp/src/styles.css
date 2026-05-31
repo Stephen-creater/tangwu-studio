@@ -919,6 +919,11 @@ button:disabled {
 
 .tw-discovered-clues.is-compact {
   gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  align-content: start;
 }
 
 .tw-discovered-clues.is-compact .tw-discovered-card {

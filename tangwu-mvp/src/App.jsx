@@ -876,7 +876,6 @@ function PlayScreen({
   const timelineRef = useRef(null);
   const stickToBottomRef = useRef(true);
   const isHumanTurn = currentPlayer?.type === "human";
-  const visibleClues = game.discoveredClues.slice(-2);
   const waitingPlayerName = currentPlayer?.name || "同行者";
   const composerStatus = runtime.engineError
     ? runtime.engineError
@@ -942,8 +941,8 @@ function PlayScreen({
               </span>
             </div>
             <div className="tw-discovered-clues is-compact">
-              {visibleClues.length > 0 ? (
-                visibleClues.map((clue) => (
+              {game.discoveredClues.length > 0 ? (
+                game.discoveredClues.map((clue) => (
                   <div key={clue.id} className="tw-discovered-card">
                     <strong>{clue.title}</strong>
                   </div>
@@ -967,19 +966,11 @@ function PlayScreen({
 
           <div className="tw-log" ref={timelineRef} onScroll={handleTimelineScroll}>
             {game.timeline.map((entry) => {
-              const clueTitle = getTimelineClueTitle(entry.clue);
-
               return (
-                <article
-                  key={entry.id}
-                  className={`tw-log-row is-${entry.type} ${
-                    clueTitle ? "has-clue" : ""
-                  }`}
-                >
+                <article key={entry.id} className={`tw-log-row is-${entry.type}`}>
                   <div className="tw-log-speaker">{entry.speaker}</div>
                   <div className="tw-log-bubble">
                     <p>{entry.text}</p>
-                    {clueTitle ? <span className="tw-clue-badge">{clueTitle}</span> : null}
                   </div>
                 </article>
               );
