@@ -1719,6 +1719,54 @@ button:disabled {
   background: linear-gradient(180deg, rgba(151, 53, 45, 0.92), rgba(108, 38, 33, 0.94));
 }
 
+.tw-result-banner.is-abandoned {
+  background: linear-gradient(180deg, rgba(86, 74, 60, 0.9), rgba(58, 49, 41, 0.94));
+}
+
+.tw-review-truth p {
+  line-height: 1.78;
+}
+
+.tw-review-clue-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.tw-review-clue-item {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(141, 103, 58, 0.14);
+  background: rgba(255, 251, 244, 0.72);
+}
+
+.tw-review-clue-item strong {
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.tw-review-clue-item span {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.tw-review-clue-item.is-found {
+  border-color: rgba(141, 103, 58, 0.32);
+  background: rgba(141, 103, 58, 0.09);
+}
+
+.tw-review-clue-item.is-missing {
+  opacity: 0.82;
+}
+
+.tw-review-actions {
+  display: grid;
+  gap: 10px;
+}
+
 .tw-review-list {
   display: grid;
   gap: 14px;
@@ -1879,7 +1927,8 @@ button:disabled {
   .tw-theme-grid,
   .tw-difficulty-grid,
   .tw-clue-grid,
-  .tw-modal-grid {
+  .tw-modal-grid,
+  .tw-review-clue-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1928,6 +1977,10 @@ button:disabled {
   .tw-summary-strip,
   .tw-clue-grid,
   .tw-modal-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tw-review-clue-grid {
     grid-template-columns: 1fr;
   }
 

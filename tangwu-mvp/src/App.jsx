@@ -473,6 +473,56 @@ function getGuessFallbackLabel() {
   return "桥守一时未能给出裁定，先按本地规则继续推进。";
 }
 
+function createFinalResult(reason, note) {
+  if (reason === "guess_success") {
+    return {
+      outcome: "success",
+      reason,
+      title: "真相揭晓",
+      note: note || "你已经抓住了真正的因果链。"
+    };
+  }
+
+  if (reason === "abandon") {
+    return {
+      outcome: "abandoned",
+      reason,
+      title: "中途离局",
+      note: note || "你选择提前结束本局，桥守便把尚未说透的真相一并摊开。"
+    };
+  }
+
+  if (reason === "guess_limit") {
+    return {
+      outcome: "failed",
+      reason,
+      title: "判断已尽",
+      note: note || "提交次数已经耗尽，桥守只能亲自把余下部分讲完。"
+    };
+  }
+
+  return {
+    outcome: "failed",
+    reason: "question_limit",
+    title: "迷雾未散",
+    note: note || "提问次数已经耗尽，桥守只好把真相完整摊开。"
+  };
+}
+
+function getReviewReasonCopy(result) {
+  switch (result?.reason) {
+    case "guess_success":
+      return "你已经在限定轮次里拆开了这碗汤。";
+    case "guess_limit":
+      return "判断机会先耗尽了，本局在提交环节收束。";
+    case "abandon":
+      return "你选择先收手离局，但这一局的真相仍值得完整看完。";
+    case "question_limit":
+    default:
+      return "提问轮次先走到了尽头，本局在信息探索阶段结束。";
+  }
+}
+
 function createPreviewGame(mode) {
   const previewBase = createInitialGame(
     DEFAULT_SETUP.humanCount,
@@ -560,11 +610,7 @@ function createPreviewGame(mode) {
     pendingGuess: "",
     result:
       mode === "review"
-        ? {
-            outcome: "success",
-            title: "真相揭晓",
-            note: "你已经抓住了真正的因果链。"
-          }
+        ? createFinalResult("guess_success", "你已经抓住了真正的因果链。")
         : null
   };
 
@@ -587,7 +633,7 @@ function createPreviewGame(mode) {
 
 function getPhaseLabel(phase) {
   if (phase === "play") return "对局中";
-  if (phase === "review") return "复盘";
+  if (phase === "review") return "结算";
   return "开局台";
 }
 
@@ -628,7 +674,6 @@ function TopBar({
   result,
   onOpenStory,
   onOpenRules,
-  onOpenReview,
   onBackToSetup
 }) {
   return (
@@ -651,11 +696,6 @@ function TopBar({
       </div>
 
       <div className="tw-toolbar">
-        {phase === "review" ? (
-          <button className="tw-toolbar-button" onClick={onOpenReview}>
-            本局回顾
-          </button>
-        ) : null}
         {phase === "play" ? (
           <button className="tw-toolbar-button" onClick={onBackToSetup}>
             回到开局台
@@ -1111,13 +1151,14 @@ function ReviewScreen({
   selectedTheme,
   onOpenStory,
   onOpenRules,
-  onOpenReview,
   onRestart
 }) {
   const progress = Math.round(
     (game.discoveredClues.length / game.scenario.clueCards.length) * 100
   );
   const champion = getTopPerformer(game.players);
+  const reasonCopy = getReviewReasonCopy(game.result);
+  const foundClueIds = new Set(game.discoveredClues.map((clue) => clue.id));
   const filteredReviewEntries = game.timeline.filter((entry, index) => {
     if (index === 0) return true;
     if (entry.type === "human") return true;
@@ -1136,7 +1177,6 @@ function ReviewScreen({
         result={game.result}
         onOpenStory={onOpenStory}
         onOpenRules={onOpenRules}
-        onOpenReview={onOpenReview}
       />
 
       <section className="tw-layout tw-review-layout">
@@ -1144,7 +1184,7 @@ function ReviewScreen({
           <div className={`tw-result-banner is-${game.result?.outcome || "failed"}`}>
             <span>{game.result?.outcome === "success" ? "通关结果" : "结局"}</span>
             <strong>{game.result?.title || "本局结束"}</strong>
-            <p>{game.result?.note}</p>
+            <p>{reasonCopy}</p>
           </div>
 
           <div className="tw-media-frame" data-tone={selectedTheme.tone}>
@@ -1153,7 +1193,12 @@ function ReviewScreen({
           </div>
 
           <div className="tw-list-card">
-            <h3>{game.scenario.title}</h3>
+            <h3>汤面回看</h3>
+            <p>{game.scenario.opening}</p>
+          </div>
+
+          <div className="tw-list-card">
+            <h3>这局的误区</h3>
             <p>{game.scenario.summary}</p>
           </div>
         </aside>
@@ -1161,29 +1206,65 @@ function ReviewScreen({
         <main className="tw-panel tw-center-panel">
           <div className="tw-panel-headline">
             <div>
-              <span className="tw-kicker">复盘时间线</span>
-              <h1>这碗汤是怎么被推开的</h1>
-              <p>把对话、回应和真正掉出来的线索按顺序回看一次。</p>
+              <span className="tw-kicker">本局结算</span>
+              <h1>{game.result?.title || "本局结束"}</h1>
+              <p>{game.result?.note}</p>
             </div>
           </div>
 
-          <div className="tw-review-list">
-            {reviewEntries.map((entry, index) => {
-              const clueTitle = getTimelineClueTitle(entry.clue);
+          <div className="tw-list-card tw-review-truth">
+            <div className="tw-block-head">
+              <h3>完整真相</h3>
+              <span>桥守已摊牌</span>
+            </div>
+            <p>{game.scenario.truth}</p>
+          </div>
 
-              return (
-                <div key={entry.id} className="tw-review-row">
-                  <div className="tw-review-index">{index + 1}</div>
-                  <div className="tw-review-card">
-                    <strong>{entry.speaker}</strong>
-                    <p>{entry.text}</p>
-                  </div>
-                  {clueTitle ? (
-                    <span className="tw-clue-badge is-inline">{clueTitle}</span>
-                  ) : null}
+          <div className="tw-list-card">
+            <div className="tw-block-head">
+              <h3>关键线索</h3>
+              <span>
+                {game.discoveredClues.length}/{game.scenario.clueCards.length}
+              </span>
+            </div>
+            <div className="tw-review-clue-grid">
+              {game.scenario.clueCards.map((clue) => (
+                <div
+                  key={clue.id}
+                  className={`tw-review-clue-item ${
+                    foundClueIds.has(clue.id) ? "is-found" : "is-missing"
+                  }`}
+                >
+                  <strong>{clue.title}</strong>
+                  <span>{foundClueIds.has(clue.id) ? "已解锁" : "未触达"}</span>
                 </div>
-              );
-            })}
+              ))}
+            </div>
+          </div>
+
+          <div className="tw-list-card">
+            <div className="tw-block-head">
+              <h3>时间线回放</h3>
+              <span>本局摘要</span>
+            </div>
+            <div className="tw-review-list">
+              {reviewEntries.map((entry, index) => {
+                const clueTitle = getTimelineClueTitle(entry.clue);
+
+                return (
+                  <div key={entry.id} className="tw-review-row">
+                    <div className="tw-review-index">{index + 1}</div>
+                    <div className="tw-review-card">
+                      <strong>{entry.speaker}</strong>
+                      <p>{entry.text}</p>
+                    </div>
+                    {clueTitle ? (
+                      <span className="tw-clue-badge is-inline">{clueTitle}</span>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </main>
 
@@ -1227,9 +1308,14 @@ function ReviewScreen({
             ))}
           </div>
 
-          <button className="tw-primary-cta" onClick={onRestart}>
-            再来一碗
-          </button>
+          <div className="tw-review-actions">
+            <button className="tw-primary-cta" onClick={onRestart}>
+              再来一碗
+            </button>
+            <button className="tw-secondary-cta" onClick={onOpenStory}>
+              查看故事档案
+            </button>
+          </div>
         </aside>
       </section>
     </div>
@@ -1367,11 +1453,7 @@ export default function App() {
           ],
           result:
             nextPhase === "review"
-              ? {
-                  outcome: "failed",
-                  title: "迷雾未散",
-                  note: "提问次数已经耗尽，桥守只好把真相完整摊开。"
-                }
+              ? createFinalResult("question_limit")
               : prev.result?.outcome === "close"
                 ? null
                 : prev.result,
@@ -1467,11 +1549,7 @@ export default function App() {
       ],
       result:
         nextPhase === "review"
-          ? {
-              outcome: "failed",
-              title: "迷雾未散",
-              note: "提问次数已经耗尽，桥守只好把真相完整摊开。"
-            }
+          ? createFinalResult("question_limit")
           : prev.result?.outcome === "close"
             ? null
             : prev.result,
@@ -1524,11 +1602,7 @@ export default function App() {
         phase: "review",
         guessesUsed: prev.guessesUsed + 1,
         pendingGuess: "",
-        result: {
-          outcome: "success",
-          title: "真相揭晓",
-          note: judgement.note || "你已经抓住了真正的因果链。"
-        },
+        result: createFinalResult("guess_success", judgement.note),
         players: prev.players.map((player) =>
           player.id === currentPlayer?.id
             ? { ...player, correctGuesses: player.correctGuesses + 1 }
@@ -1559,11 +1633,7 @@ export default function App() {
         pendingGuess: "",
         phase: shouldEnd ? "review" : prev.phase,
         result: shouldEnd
-          ? {
-              outcome: "failed",
-              title: "迷雾未散",
-              note: judgement.note || "提交次数已经耗尽，桥守只能亲自把余下部分讲完。"
-            }
+          ? createFinalResult("guess_limit", judgement.note)
           : {
               outcome: judgement.outcome,
               title: judgement.outcome === "close" ? "还差半步" : "桥雾未开",
@@ -1586,6 +1656,28 @@ export default function App() {
         ]
       };
     });
+  };
+
+  const handleExitRequest = () => {
+    setActiveOverlay("exit");
+  };
+
+  const handleAbandonToReview = () => {
+    setActiveOverlay(null);
+    setRuntime((prev) => ({
+      ...prev,
+      aiPending: false,
+      guessPending: false,
+      engineLabel: "这一局已经收束，你可以先看完真相再决定要不要重来。",
+      engineError: ""
+    }));
+    setGame((prev) => ({
+      ...prev,
+      pendingGuess: "",
+      pendingQuestion: "",
+      phase: "review",
+      result: createFinalResult("abandon")
+    }));
   };
 
   const resetToSetup = () => {
@@ -1661,6 +1753,33 @@ export default function App() {
       };
     }
 
+    if (activeOverlay === "exit") {
+      return {
+        eyebrow: "结束本局",
+        title: "要先收起这一局吗？",
+        subtitle: "当前进度会进入结算页，你仍然可以查看完整真相与已获得线索。",
+        children: (
+          <div className="tw-modal-card is-full">
+            <span>当前进度</span>
+            <p>
+              已提问 {game.totalQuestions} 次，已解锁 {game.discoveredClues.length} 条线索，
+              已提交 {game.guessesUsed} 次汤底。
+            </p>
+          </div>
+        ),
+        footer: (
+          <>
+            <button className="tw-secondary-cta" onClick={() => setActiveOverlay(null)}>
+              继续本局
+            </button>
+            <button className="tw-secondary-cta is-dark" onClick={handleAbandonToReview}>
+              结束并结算
+            </button>
+          </>
+        )
+      };
+    }
+
     if (activeOverlay === "rules") {
       return {
         eyebrow: "玩法规则",
@@ -1688,46 +1807,6 @@ export default function App() {
                 <span>当前难度</span>
                 <strong>{selectedDifficulty.title}</strong>
                 <p>{selectedDifficulty.helper}</p>
-              </div>
-            </div>
-          </>
-        )
-      };
-    }
-
-    if (activeOverlay === "review") {
-      const champion = getTopPerformer(game.players);
-      return {
-        eyebrow: "本局回顾",
-        title: game.result?.title || "本局结束",
-        subtitle: champion ? `表现最突出：${champion.name}` : "本局没有最佳席位",
-        children: (
-          <>
-            <div className="tw-modal-grid">
-              <div className="tw-modal-card">
-                <span>探索完成度</span>
-                <strong>
-                  {Math.round(
-                    (game.discoveredClues.length / game.scenario.clueCards.length) * 100
-                  )}
-                  %
-                </strong>
-                <p>已发现 {game.discoveredClues.length} 条关键线索。</p>
-              </div>
-              <div className="tw-modal-card">
-                <span>问题数量</span>
-                <strong>{game.totalQuestions}</strong>
-                <p>本局共推进了 {game.timeline.length} 条对话记录。</p>
-              </div>
-              <div className="tw-modal-card">
-                <span>提交次数</span>
-                <strong>{game.guessesUsed}</strong>
-                <p>判断窗口越早越大胆，越能体现推理节奏。</p>
-              </div>
-              <div className="tw-modal-card">
-                <span>最佳席位</span>
-                <strong>{champion?.name || "—"}</strong>
-                <p>综合线索命中与真相提交计算。</p>
               </div>
             </div>
           </>
@@ -1786,7 +1865,7 @@ export default function App() {
           onOpenStory={() => setActiveOverlay("story")}
           onOpenRules={() => setActiveOverlay("rules")}
           onOpenGuess={() => setActiveOverlay("guess")}
-          onBackToSetup={resetToSetup}
+          onBackToSetup={handleExitRequest}
           onQuestionChange={handleQuestionChange}
           onAskQuestion={handleAskQuestion}
           onSubmitGuess={handleSubmitGuess}
@@ -1799,7 +1878,6 @@ export default function App() {
           selectedTheme={selectedTheme}
           onOpenStory={() => setActiveOverlay("story")}
           onOpenRules={() => setActiveOverlay("rules")}
-          onOpenReview={() => setActiveOverlay("review")}
           onRestart={resetToSetup}
         />
       ) : null}
