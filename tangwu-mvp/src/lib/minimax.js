@@ -61,6 +61,24 @@ function isUsableQuestion(text) {
   return Boolean(text) && text.length <= 30 && /[？?]$/.test(text) && !/[A-Za-z]/.test(text);
 }
 
+function normalizeQuestionForDedup(text) {
+  return text
+    .replace(/[\s，。、“”‘’？！!?,.:：;；（）()《》<>「」『』—-]/g, "")
+    .replace(/^[-–—\s]+/, "")
+    .trim()
+    .toLowerCase();
+}
+
+function hasRepeatedQuestion(question, game) {
+  const target = normalizeQuestionForDedup(question);
+  if (!target) return false;
+
+  return game.timeline.some((entry) => {
+    if (entry.type !== "human" && entry.type !== "ai") return false;
+    return normalizeQuestionForDedup(entry.text) === target;
+  });
+}
+
 function defaultNoteForOutcome(outcome) {
   if (outcome === "success") return "你已经抓住了真正的因果链。";
   if (outcome === "close") return "你已经非常接近，再补一个关键因果就够了。";
@@ -160,10 +178,14 @@ function buildRecentTimeline(game) {
 }
 
 export async function generateAiQuestion(game, player) {
+  const askedQuestions = game.timeline
+    .filter((entry) => entry.type === "human" || entry.type === "ai")
+    .map((entry) => entry.text.trim());
+
   const prompt = [
     "你是中文海龟汤游戏里的 AI 队友。",
     "请根据题面与已知线索，提出一个最值得问桥守的问题。",
-    "要求：只能输出一个中文问题；问题必须能被回答为“是/否/无关”；不要解释；不要英文；不要多问。",
+    "要求：只能输出一个中文问题；问题必须能被回答为“是/否/无关”；不要解释；不要英文；不要多问；不要重复其他玩家已经问过的问题；不要只改写最近已经出现过的问题。",
     "",
     `故事标题：${game.scenario.title}`,
     `题面：${game.scenario.opening}`,
@@ -173,7 +195,11 @@ export async function generateAiQuestion(game, player) {
         : "暂无"
     }`,
     `当前玩家：${player.seat}号 ${player.name}`,
+    `本局已问问题：${
+      askedQuestions.length > 0 ? askedQuestions.join("；") : "暂无"
+    }`,
     `最近对话：\n${buildRecentTimeline(game)}`,
+    "优先提出一个和已问问题不同、但能推进真相的新角度。",
     "只输出问题本身。"
   ].join("\n");
 
@@ -186,7 +212,12 @@ export async function generateAiQuestion(game, player) {
     throw new Error("MiniMax did not return a valid question.");
   }
 
-  return question.replace(/^["'“”]+|["'“”]+$/g, "");
+  const cleaned = question.replace(/^["'“”]+|["'“”]+$/g, "");
+  if (hasRepeatedQuestion(cleaned, game)) {
+    throw new Error("MiniMax returned a repeated question.");
+  }
+
+  return cleaned;
 }
 
 export async function askKeeperAnswer(game, question) {

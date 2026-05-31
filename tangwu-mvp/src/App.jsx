@@ -68,6 +68,14 @@ function normalize(text) {
     .toLowerCase();
 }
 
+function normalizeQuestionForComparison(text) {
+  return text
+    .replace(/[\s，。、“”‘’？！!?,.:：;；（）()《》<>「」『』—-]/g, "")
+    .replace(/^[-–—\s]+/, "")
+    .trim()
+    .toLowerCase();
+}
+
 const negationTerms = ["不是", "并不是", "并非", "没有", "不算", "非"];
 
 const semanticAnswerRules = {
@@ -442,6 +450,21 @@ function getFallbackAiQuestion(player, scenario) {
     script[Math.min(asked, Math.max(script.length - 1, 0))] ||
     "这件事和最反常的物件有关吗？"
   );
+}
+
+function getUnusedFallbackAiQuestion(player, scenario, timeline) {
+  const script = scenario.aiQuestions?.[player.id] || [];
+  const askedSet = new Set(
+    timeline
+      .filter((entry) => entry.type === "human" || entry.type === "ai")
+      .map((entry) => normalizeQuestionForComparison(entry.text))
+  );
+
+  const unused = script.find(
+    (question) => !askedSet.has(normalizeQuestionForComparison(question))
+  );
+
+  return unused || getFallbackAiQuestion(player, scenario);
 }
 
 function createInitialRuntime() {
@@ -1398,8 +1421,8 @@ export default function App() {
     }));
 
     const timer = window.setTimeout(async () => {
-      const question =
-        (() => getFallbackAiQuestion(currentPlayer, game.scenario))();
+      const question = (() =>
+        getUnusedFallbackAiQuestion(currentPlayer, game.scenario, game.timeline))();
 
       let resolvedQuestion = question;
       try {
@@ -1413,6 +1436,7 @@ export default function App() {
           }));
         }
       } catch (error) {
+        resolvedQuestion = question;
         if (!cancelled) {
           setRuntime((prev) => ({
             ...prev,
