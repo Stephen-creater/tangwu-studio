@@ -84,7 +84,7 @@ const semanticAnswerRules = {
     {
       all: [
         ["呼救", "求救", "喊救命", "喊声", "叫声", "声音", "那声"],
-        ["凶手", "真凶", "犯人", "作案人", "别人", "有人", "伪装", "误导"]
+        ["别人", "有人", "另一个人", "假扮", "模仿", "冒充", "伪装", "误导"]
       ],
       answer: "是",
       clueId: "bridge-false-cry"
@@ -92,7 +92,7 @@ const semanticAnswerRules = {
     {
       all: [
         ["尸体", "死者", "受害者"],
-        ["昨夜", "半夜", "刚刚", "刚才", "听到以后", "呼救后"],
+        ["半夜", "深夜", "刚刚", "刚才", "听到以后", "呼救后"],
         ["坠桥", "掉下", "落到", "落下", "桥下", "死"]
       ],
       negatedAnswer: "是",
@@ -102,23 +102,53 @@ const semanticAnswerRules = {
     {
       all: [
         ["死者", "受害者", "尸体"],
-        ["早就", "之前", "傍晚", "提前", "早已", "先死"]
+        ["早就", "之前", "傍晚", "提前", "早已", "先死", "深夜前"]
       ],
       answer: "是",
       clueId: "bridge-early-death"
     },
     {
       all: [
-        ["尸体", "现场", "桥下", "桥边"],
-        ["挪", "搬", "移动", "摆", "布置", "动过", "伪造"]
+        ["尸体", "手", "指节", "身子", "身体"],
+        ["冷", "凉", "发僵", "僵硬", "掰不开", "尸僵"]
+      ],
+      answer: "是",
+      clueId: "bridge-early-death"
+    },
+    {
+      all: [
+        ["尸体", "现场", "桥下", "桥边", "桥面"],
+        ["挪", "搬", "拖", "移动", "摆", "布置", "动过", "伪造", "拖痕"]
       ],
       answer: "是",
       clueId: "bridge-staged"
     },
     {
       all: [
+        ["鞋底", "鞋", "脚底"],
+        ["干净", "没泥", "不脏", "无泥", "泥痕"]
+      ],
+      answer: "是",
+      clueId: "bridge-staged"
+    },
+    {
+      all: [["她", "死者", "尸体"], ["自己", "独自"], ["走到", "来到"], ["桥边", "桥上"]],
+      negatedAnswer: "是",
+      answer: "否",
+      clueId: "bridge-staged"
+    },
+    {
+      all: [
         ["玉佩", "玉坠", "玉", "佩饰"],
-        ["死后", "塞", "放进", "摆", "伪装", "手里", "关键", "重要"]
+        ["死后", "塞", "放进", "摆", "伪装", "手里", "关键", "重要", "原本"]
+      ],
+      answer: "是",
+      clueId: "bridge-pendant"
+    },
+    {
+      all: [
+        ["月半", "祭夫", "忌辰", "亡夫"],
+        ["桥边", "桥上", "玉佩", "习惯", "烧纸"]
       ],
       answer: "是",
       clueId: "bridge-pendant"
@@ -133,47 +163,42 @@ const semanticAnswerRules = {
     },
     {
       all: [
-        ["伪造", "假装", "制造", "误导", "骗局", "故意", "相信"],
-        ["死亡时间", "时间", "刚刚", "昨夜", "坠桥"]
+        ["伪造", "假装", "制造", "误导", "骗局", "故意", "让人相信", "证人", "作证"],
+        ["死亡时间", "时间", "刚刚", "深夜", "半夜", "还活着"]
       ],
       answer: "是",
       clueId: "bridge-time-fake"
     },
     {
       all: [
-        ["桥下", "现场", "痕迹", "桥面"],
+        ["桥边", "桥下", "现场", "痕迹", "桥面"],
         ["关键", "重要", "可疑", "反常"]
       ],
       answer: "是",
       clueId: "bridge-staged"
     },
     {
-      any: ["谋杀", "他杀", "被杀", "凶杀", "杀人", "凶手", "真凶", "作案"],
+      any: ["深夜前", "傍晚", "提前", "早就", "先死", "早已"],
       answer: "是",
-      clueId: "bridge-false-cry"
+      clueId: "bridge-early-death"
     },
     {
-      any: ["呼救", "求救", "喊救命", "喊声", "叫声", "声音", "那声"],
+      any: ["尸僵", "发僵", "掰不开", "手冷", "身子冷", "指节发硬"],
       answer: "是",
-      clueId: "bridge-false-cry"
+      clueId: "bridge-early-death"
     },
     {
-      any: ["意外", "失足", "自杀"],
-      answer: "否",
-      clueId: "bridge-time-fake"
-    },
-    {
-      any: ["尸体", "桥下", "桥边", "现场", "痕迹", "挪动", "移动"],
+      any: ["拖痕", "拖拽", "搬运", "挪动", "移动", "桥边痕迹", "桥下现场"],
       answer: "是",
       clueId: "bridge-staged"
     },
     {
-      any: ["玉佩", "玉坠", "佩饰"],
+      any: ["月半", "祭夫", "亡夫", "烧纸", "习惯", "忌辰"],
       answer: "是",
       clueId: "bridge-pendant"
     },
     {
-      any: ["死亡时间", "死亡", "时间", "昨夜", "刚刚", "坠桥"],
+      any: ["死亡时间", "伪造时间", "刚刚出事", "作证", "证人", "还活着"],
       answer: "是",
       clueId: "bridge-time-fake"
     }
@@ -457,12 +482,13 @@ function createPreviewGame(mode) {
 
   const firstClue = getClueCardById(previewBase.scenario, "bridge-false-cry");
   const secondClue = getClueCardById(previewBase.scenario, "bridge-time-fake");
-  const discoveredClues = [firstClue, secondClue].filter(Boolean);
+  const thirdClue = getClueCardById(previewBase.scenario, "bridge-pendant");
+  const discoveredClues = [firstClue, secondClue, thirdClue].filter(Boolean);
 
   const previewPlay = {
     ...previewBase,
     phase: mode === "review" ? "review" : "play",
-    totalQuestions: 3,
+    totalQuestions: 4,
     guessesUsed: mode === "review" ? 1 : 0,
     activeSeat: 2,
     discoveredClues,
@@ -478,7 +504,7 @@ function createPreviewGame(mode) {
         type: "keeper",
         speaker: "桥守",
         seatId: "keeper",
-        text: "桥上那声求救，未必是从活人嘴里替活人喊出来的。",
+        text: "桥上那声求救来得太巧了，巧得像是专门喊给人听的。",
         clue: null
       },
       {
@@ -486,7 +512,7 @@ function createPreviewGame(mode) {
         type: "human",
         speaker: "你",
         seatId: "seat-1",
-        text: "呼救的人就是死者吗？",
+        text: "桥上的呼救声是死者本人喊的吗？",
         clue: null
       },
       {
@@ -502,7 +528,7 @@ function createPreviewGame(mode) {
         type: "human",
         speaker: "你",
         seatId: "seat-1",
-        text: "有人在伪造这场坠桥的发生时间吗？",
+        text: "那声呼救是在故意伪造她刚刚出事的时间吗？",
         clue: null
       },
       {
@@ -518,7 +544,7 @@ function createPreviewGame(mode) {
         type: "ai",
         speaker: "同行者甲",
         seatId: "seat-2",
-        text: "玉佩是在死后才被塞进她手里的吗？",
+        text: "玉佩原本不是握在她手里，而是后来被塞进去的吗？",
         clue: null
       },
       {
@@ -527,7 +553,7 @@ function createPreviewGame(mode) {
         speaker: "桥守",
         seatId: "keeper",
         text: "是。",
-        clue: null
+        clue: thirdClue || null
       }
     ],
     pendingQuestion: "",
@@ -550,7 +576,7 @@ function createPreviewGame(mode) {
         type: "human",
         speaker: "你",
         seatId: "seat-1",
-        text: "我已知晓真相：桥上的呼救声是凶手喊的，死者早在昨夜前就已身亡。",
+        text: "我已知晓真相：沈青黛在傍晚争执时就已遇害，半夜桥上的求救是凶手故意喊给众人听的，尸体和玉佩都是后来被摆到桥边的。",
         clue: null
       }
     ];
